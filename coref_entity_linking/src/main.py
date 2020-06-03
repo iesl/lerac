@@ -50,9 +50,10 @@ from transformers import (WEIGHTS_NAME, BertConfig,
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from trainer import (MentionClusteringTrainer,
-                     VanillaLinkingTrainer,
-                     XDocClusterLinkingTrainer)
+from trainer.trainer import (MentionClusteringTrainer,
+                             VanillaLinkingTrainer,
+                             XDocClusterLinkingTrainer,
+                             ClusterLinkingTrainer)
 from utils import initialize_exp
 
 logger = logging.getLogger(__name__)
@@ -226,6 +227,8 @@ def main():
         trainer = VanillaLinkingTrainer(args)
     elif args.task_name == 'xdoc_cluster_linking':
         trainer = XDocClusterLinkingTrainer(args)
+    elif args.task_name == 'cluster_linking':
+        trainer = ClusterLinkingTrainer(args)
     else:
         raise ValueError("Invalid task name: {}".format(args.task_name))
     logger.info('Successfully created trainer object')

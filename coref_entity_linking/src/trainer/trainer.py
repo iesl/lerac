@@ -30,11 +30,13 @@ from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 from model import (MirrorStackEmbeddingModel,
+                   MirrorEmbeddingModel,
                    ConcatenationModel,
                    CrossEncoder,
                    PolyEncoder,
                    ScalarAffineModel)
-from data import (MentionClusteringProcessor,
+from data.preprocessing import ZeshelPreprocessor
+from data.data import (MentionClusteringProcessor,
                   LinkingProcessor,
                   XDocClusterLinkingProcessor,
                   WrappedTensorDataset,
@@ -51,7 +53,6 @@ from data import (MentionClusteringProcessor,
                   _read_mentions)
 from comm import all_gather, broadcast
 from utils import flatten, all_same, dict_merge_with
-from graphviz import Graphviz
 
 from IPython import embed
 
@@ -126,34 +127,50 @@ class Trainer(ABC):
         assert split == 'train' or split == 'val' or split == 'test'
         assert evaluate == True or split == 'train'
 
-        cache_dir = os.path.join(args.data_dir, 'cache')
+        cache_dir = os.path.join(args.data_dir, 'cache', split)
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
 
-        if split == 'train' and evaluate:
-            cached_mode = 'train_eval'
-        else:
-            cached_mode = split
-
-        split_desc = 'cached_{}_{}_{}'.format(
-            cached_mode,
-            str(args.max_seq_length),
-            str(args.task_name))
-
         if split == 'train':
             domains = args.train_domains
+            args.train_cache_dir = cache_dir
         elif split == 'val':
             domains = args.val_domains
+            args.val_cache_dir = cache_dir
         else:
             domains = args.test_domains
+            args.test_cache_dir = cache_dir
 
-        outputs = self.create_or_load_processed_data(
-                split, domains, cache_dir, split_desc, evaluate)
+        self.create_or_load_preprocessed_data(
+                split, domains, cache_dir)
 
         if args.local_rank == 0:
             dist.barrier()
 
-        return outputs
+    def create_or_load_preprocessed_data(self,
+                                         split,
+                                         domains,
+                                         cache_dir):
+        args = self.args
+
+        metadata_file = os.path.join(cache_dir, 'metadata.pt')
+
+        if (os.path.exists(metadata_file) and not args.overwrite_cache):
+            self.metadata = torch.load(metadata_file)
+        else:
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir)
+
+            preprocessor = ZeshelPreprocessor(args)
+            self.metadata = preprocessor.preprocess_data(
+                    args.data_dir,
+                    split,
+                    domains,
+                    cache_dir,
+                    args.max_seq_length,
+                    self.models['mention_embedding'].tokenizer)
+
+            torch.save(self.metadata, metadata_file)
 
     def set_optimizers_and_schedulers(self):
         args = self.args
@@ -184,7 +201,7 @@ class Trainer(ABC):
                 ]
             self.optimizers[model_name] = AdamW(
                     optimizer_grouped_parameters,
-                    lr=1e-3 if 'affine' in model_name else args.learning_rate,
+                    lr=args.learning_rate,
                     eps=args.adam_epsilon
             )
             self.schedulers[model_name] = get_linear_schedule_with_warmup(
@@ -213,14 +230,20 @@ class Trainer(ABC):
     def create_test_dataloader(self):
         pass
 
-    @abstractmethod
-    def create_or_load_processed_data(self,
-                                      split,
-                                      domains,
-                                      cache_dir,
-                                      split_desc,
-                                      evaluate):
-        pass
+
+class ClusterLinkingTrainer(Trainer):
+
+    def __init__(self, args):
+        super(ClusterLinkingTrainer, self).__init__(args)
+    
+    def create_models(self):
+        args = self.args
+        self.models = {
+                'embedding_model': MirrorEmbeddingModel(
+                    args,
+                    name='embedding_model'
+                )
+        }
 
 
 class XDocClusterLinkingTrainer(Trainer):
@@ -238,10 +261,6 @@ class XDocClusterLinkingTrainer(Trainer):
                 'mention_embedding': MirrorStackEmbeddingModel(
                     args,
                     name='mention_embedding'
-                ),
-                'mention_mention_score': CrossEncoder(
-                    args,
-                    name='mention_mention_score'
                 )
         }
 
@@ -316,89 +335,6 @@ class XDocClusterLinkingTrainer(Trainer):
         args = self.args
         return self.load_and_cache_examples(split=split, evaluate=True)
 
-    def create_or_load_processed_data(self,
-                                      split,
-                                      domains,
-                                      cache_dir,
-                                      split_desc,
-                                      evaluate):
-        args = self.args
-
-        cached_mention_examples_dir = os.path.join(
-                cache_dir, split_desc + '_mention_examples')
-        cached_mention_entity_examples_dir = os.path.join(
-                cache_dir, split_desc + '_mention_entity_examples')
-        cached_cluster_indices_dir = os.path.join(
-                cache_dir, split_desc + '_cluster_indices')
-
-        if split == 'train' and not evaluate:
-            args.cached_train_mention_examples_dir = cached_mention_examples_dir
-            args.cached_train_mention_entity_dir = cached_mention_entity_examples_dir 
-        else:
-            args.cached_mention_examples_dir = cached_mention_examples_dir
-
-        if (os.path.exists(cached_cluster_indices_dir) 
-            and not args.overwrite_cache):
-            cluster_indices_files = os.listdir(cached_cluster_indices_dir)
-            indices_dicts = []
-            for filename in cluster_indices_files:
-                indices_dicts.append(torch.load(os.path.join(cached_cluster_indices_dir, filename)))
-        else:
-            if not os.path.exists(cached_mention_examples_dir):
-                os.makedirs(cached_mention_examples_dir)
-            if not os.path.exists(cached_mention_entity_examples_dir):
-                os.makedirs(cached_mention_entity_examples_dir)
-            if not os.path.exists(cached_cluster_indices_dir):
-                os.makedirs(cached_cluster_indices_dir)
-
-            processor = XDocClusterLinkingProcessor()
-
-            # preprocess data returning indices
-            indices_dicts = processor.get_cluster_datasets(
-                args.data_dir,
-                split,
-                domains,
-                cached_mention_examples_dir,
-                cached_mention_entity_examples_dir,
-                cached_cluster_indices_dir,
-                args.max_seq_length,
-                self.models['mention_embedding'].tokenizer,
-                evaluate=evaluate)
-
-        if evaluate:
-            _indices_dict = indices_dicts[0]
-            cluster2mentions = _indices_dict['cluster2mentions']
-            mention_dataset = LazyDataset(cached_mention_examples_dir,
-                                          _indices_dict['mention_indices'])
-            mention_entity_dataset = LazyConcatDataset(
-                    cached_mention_entity_examples_dir,
-                    _indices_dict['mention_entity_indices']
-            )
-            return (cluster2mentions,
-                    mention_dataset,
-                    mention_entity_dataset)
-
-        cluster_ids = []
-        mention_datasets = []
-        mention_entity_datasets = []
-        for _indices_dict in indices_dicts:
-            cluster_ids.append(_indices_dict['cluster_id'])
-            mention_datasets.append(
-                    {'dir': cached_mention_examples_dir,
-                     'indices': _indices_dict['mention_indices']}
-            )
-            mention_entity_datasets.append(
-                    {'dir': cached_mention_entity_examples_dir,
-                     'indices': _indices_dict['mention_entity_indices']}
-            )
-
-        clusters_data_list = list(zip(cluster_ids,
-                                      mention_datasets,
-                                      mention_entity_datasets))
-        return [{'cluster_id' : a,
-                 'mention_dataset' : b,
-                 'mention_entity_dataset' : c}
-                for a, b, c in clusters_data_list]
 
     def compute_emb_scores_inference(self, mention_dataset, evaluate=False):
         args = self.args

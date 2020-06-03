@@ -12,8 +12,8 @@ import torch.distributed as dist
 from IPython import embed
 
 
-START_MENTION_TOKEN = '[unused1]'
-END_MENTION_TOKEN = '[unused2]'
+START_HGHLGHT_TOKEN = '[unused1]'
+END_HGHLGHT_TOKEN = '[unused2]'
 
 
 def flatten(lst):

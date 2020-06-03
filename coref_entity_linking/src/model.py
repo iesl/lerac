@@ -28,13 +28,131 @@ from transformers import (BertConfig,
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from utils import (START_MENTION_TOKEN,
-                   END_MENTION_TOKEN,
+from utils import (START_HGHLGHT_TOKEN,
+                   END_HGHLGHT_TOKEN,
                    flatten,
                    DistributedCache)
 
 from IPython import embed
 
+
+class MirrorEmbeddingModel(nn.Module):
+    
+    def __init__(self, args, name=''):
+        super(MirrorStackEmbeddingModel, self).__init__()
+
+        # for saving purposes
+        if name is not '':
+            name += '_'
+        self.name = name
+
+        self.args = args
+        if args.model_name_or_path is not None:
+            assert args.trained_model_dir is None
+            self._create_model_from_scratch()
+        else:
+            assert args.trained_model_dir is not None
+            self._load_pretrained_model()
+
+    def _create_model_from_scratch(self):
+        args = self.args
+        config = BertConfig.from_pretrained(
+                args.config_name 
+                    if args.config_name
+                    else args.model_name_or_path,
+                finetuning_task=args.task_name,
+                cache_dir=args.cache_dir
+                    if args.cache_dir
+                    else None)
+
+        self.tokenizer = BertTokenizer.from_pretrained(
+               args.tokenizer_name
+                   if args.tokenizer_name
+                   else args.model_name_or_path,
+               do_lower_case=args.do_lower_case,
+               cache_dir=args.cache_dir
+                   if args.cache_dir
+                   else None)
+
+        # Add some custom variables to the config
+        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_HGHLGHT_TOKEN)
+        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
+        config.pooling_strategy = args.pooling_strategy
+        self.model = SequenceEmbeddingModel.from_pretrained(
+                args.model_name_or_path,
+                from_tf=bool('.ckpt' in args.model_name_or_path),
+                config=config,
+                cache_dir=args.cache_dir if args.cache_dir else None)
+
+    def _load_pretrained_model(self):
+        args = self.args
+        self.tokenizer = BertTokenizer.from_pretrained(
+                os.path.join(args.trained_model_dir, self.name + 'model'))
+        self.model = SequenceEmbeddingModel.from_pretrained(
+                os.path.join(args.trained_model_dir, self.name + 'model'))
+
+    def save_model(self, suffix=None):
+        # suffix should be a string that describes the model, often a checkpoint
+        assert suffix is not None
+        args = self.args
+        save_dir = os.path.join(args.output_dir, suffix, self.name + 'model')
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        self.model.save_pretrained(save_dir)
+        self.tokenizer.save_pretrained(save_dir)
+
+    def forward(self,
+                input_ids_a=None,
+                attention_mask_a=None,
+                token_type_ids_a=None,
+                input_ids_b=None,
+                attention_mask_b=None,
+                token_type_ids_b=None,
+                head_mask=None,
+                inputs_embeds=None,
+                evaluate=False):
+
+        _squeeze_batch_dim = False
+        if len(input_ids_a.shape) == 2:
+            _squeeze_batch_dim = True
+            input_ids_a = input_ids_a.unsqueeze(0)
+            attention_mask_a = attention_mask_a.unsqueeze(0)
+            token_type_ids_a = token_type_ids_a.unsqueeze(0)
+
+        if input_ids_b is not None:
+            if _squeeze_batch_dim:
+                input_ids_b = input_ids_b.unsqueeze(0)
+                attention_mask_b = attention_mask_b.unsqueeze(0)
+                token_type_ids_b = token_type_ids_b.unsqueeze(0)
+
+            assert len(input_ids_a.shape) == len(input_ids_b.shape)
+            assert input_ids_a.shape[0] == input_ids_b.shape[0]
+            num_seq_a = input_ids_a.shape[1]
+
+            input_ids = torch.cat((input_ids_a, input_ids_b), 1)
+            attention_mask = torch.cat((attention_mask_a, attention_mask_b), 1)
+            token_type_ids = torch.cat((token_type_ids_a, token_type_ids_b), 1)
+        else:
+            input_ids = input_ids_a
+            attention_mask = attention_mask_a
+            token_type_ids = token_type_ids_a
+        
+        embeddings = self.model(input_ids=input_ids,
+                                attention_mask=attention_mask,
+                                token_type_ids=token_type_ids,
+                                evaluate=evaluate)
+        embeddings = F.normalize(embeddings, p=2, dim=-1)
+
+        if input_ids_b is None:
+            if _squeeze_batch_dim:
+                embeddings = embeddings.squeeze(0)
+            return embeddings
+        else:
+            embeddings_a = embeddings[:,:num_seq_a,:]
+            embeddings_b = torch.transpose(embeddings[:,num_seq_a:,:], 1, 2)
+            scores = 1.0 - torch.bmm(embeddings_a, embeddings_b).squeeze(0)
+
+            return scores
 
 class ScalarAffineModel(nn.Module):
 
@@ -114,8 +232,8 @@ class MirrorStackEmbeddingModel(nn.Module):
                    else None)
 
         # Add some custom variables to the config
-        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_MENTION_TOKEN)
-        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_MENTION_TOKEN)
+        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_HGHLGHT_TOKEN)
+        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
         config.pooling_strategy = args.pooling_strategy
         self.model = SequenceEmbeddingModel.from_pretrained(
                 args.model_name_or_path,
@@ -368,8 +486,8 @@ class PolyEncoder(nn.Module):
                    else None)
 
         # add extra config variables
-        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_MENTION_TOKEN)
-        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_MENTION_TOKEN)
+        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_HGHLGHT_TOKEN)
+        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
         config.pooling_strategy = args.pooling_strategy
         config.num_context_codes = args.num_context_codes
 

@@ -16,7 +16,7 @@ set -euxo pipefail
 #mkdir -p exp 
 #
 
-BASE_DIR="/mnt/nfs/scratch1/rangell/coref_entity_linking"
+BASE_DIR="/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking"
 DATASET="mm_st21pv_long_entities"
 
 train_domains=("train" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204")
@@ -24,8 +24,8 @@ val_domains=("val" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058
 test_domains=("test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204")
 
 python -m torch.distributed.launch \
-    --nproc_per_node 8 \
-    src/run.py \
+    --nproc_per_node 1 \
+    src/main.py \
         --data_dir data/${DATASET}/ \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
