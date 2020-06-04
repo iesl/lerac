@@ -52,8 +52,8 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 from trainer.trainer import (MentionClusteringTrainer,
                              VanillaLinkingTrainer,
-                             XDocClusterLinkingTrainer,
-                             ClusterLinkingTrainer)
+                             XDocClusterLinkingTrainer)
+from trainer.cluster_linking_trainer import ClusterLinkingTrainer
 from utils import initialize_exp
 
 logger = logging.getLogger(__name__)
@@ -135,6 +135,17 @@ def get_args():
                         help="number of candidates per mention for training concatenation model.")
     parser.add_argument("--num_candidates_per_example", default=16, type=int,
                         help="number of candidates per example for concatenation model.")
+    parser.add_argument("--clustering_reach",
+                        default='within_doc',
+                        choices = ['within_doc', 'cross_doc'],
+                        type=str,
+                        help="do within document clustering"
+                             "or cross-document clustering")
+    parser.add_argument("--negative_entity_reach",
+                        default='candidates_only',
+                        choices = ['candidates_only', 'open_domain'],
+                        type=str,
+                        help="what to consider when choosing negative entities")
 
     parser.add_argument("--num_clusters_per_macro_batch", default=8, type=int,
                         help="num clusters to consider in outer-loop batch")
@@ -198,12 +209,6 @@ def get_args():
 def main():
 
     args = get_args()
-
-    # check to make sure we're only doing one thing
-    assert sum([args.do_train,
-                args.do_train_eval,
-                args.do_val,
-                args.do_test]) == 1
 
     # set logger filename
     if args.do_train:

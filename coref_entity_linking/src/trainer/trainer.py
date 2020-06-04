@@ -89,8 +89,9 @@ class Trainer(ABC):
             # create training dataloader
             self.create_train_dataloader()
 
-            # create train eval dataloader for computing better negatives
-            self.create_train_eval_dataloader()
+            if args.evaluate_during_training:
+                self.create_train_eval_dataloader()
+                #self.create_val_dataloader()
 
             # set optimizers and schedulers
             self.set_optimizers_and_schedulers()
@@ -230,20 +231,13 @@ class Trainer(ABC):
     def create_test_dataloader(self):
         pass
 
-
-class ClusterLinkingTrainer(Trainer):
-
-    def __init__(self, args):
-        super(ClusterLinkingTrainer, self).__init__(args)
+    @abstractmethod
+    def train(self):
+        pass
     
-    def create_models(self):
-        args = self.args
-        self.models = {
-                'embedding_model': MirrorEmbeddingModel(
-                    args,
-                    name='embedding_model'
-                )
-        }
+    @abstractmethod
+    def evaluate(self, split):
+        pass
 
 
 class XDocClusterLinkingTrainer(Trainer):

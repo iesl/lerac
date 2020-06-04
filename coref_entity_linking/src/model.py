@@ -39,7 +39,7 @@ from IPython import embed
 class MirrorEmbeddingModel(nn.Module):
     
     def __init__(self, args, name=''):
-        super(MirrorStackEmbeddingModel, self).__init__()
+        super(MirrorEmbeddingModel, self).__init__()
 
         # for saving purposes
         if name is not '':
@@ -153,6 +153,20 @@ class MirrorEmbeddingModel(nn.Module):
             scores = 1.0 - torch.bmm(embeddings_a, embeddings_b).squeeze(0)
 
             return scores
+
+    def get_embeddings(self, dataset):
+        pass
+
+    def compute_scores_for_inference(self, dataset):
+        pass
+
+    def train_on_subset(self, dataset):
+        pass
+
+    def compute_topk_score_evaluation(self, dataset):
+        pass
+
+
 
 class ScalarAffineModel(nn.Module):
 
