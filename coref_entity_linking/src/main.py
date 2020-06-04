@@ -135,15 +135,17 @@ def get_args():
                         help="number of candidates per mention for training concatenation model.")
     parser.add_argument("--num_candidates_per_example", default=16, type=int,
                         help="number of candidates per example for concatenation model.")
-    parser.add_argument("--clustering_reach",
+    parser.add_argument("--clustering_domain",
                         default='within_doc',
                         choices = ['within_doc', 'cross_doc'],
                         type=str,
                         help="do within document clustering"
                              "or cross-document clustering")
-    parser.add_argument("--negative_entity_reach",
+    parser.add_argument("--available_entities",
                         default='candidates_only',
-                        choices = ['candidates_only', 'open_domain'],
+                        choices = ['candidates_only',
+                                   'knn_candidates',
+                                   'open_domain'],
                         type=str,
                         help="what to consider when choosing negative entities")
 

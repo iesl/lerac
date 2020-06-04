@@ -85,6 +85,7 @@ class Trainer(ABC):
         if args.local_rank == 0:
             dist.barrier()
 
+
         if args.do_train:
             # create training dataloader
             self.create_train_dataloader()
@@ -157,21 +158,28 @@ class Trainer(ABC):
         metadata_file = os.path.join(cache_dir, 'metadata.pt')
 
         if (os.path.exists(metadata_file) and not args.overwrite_cache):
-            self.metadata = torch.load(metadata_file)
+            _metadata = torch.load(metadata_file)
         else:
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
             preprocessor = ZeshelPreprocessor(args)
-            self.metadata = preprocessor.preprocess_data(
+            _metadata = preprocessor.preprocess_data(
                     args.data_dir,
                     split,
                     domains,
                     cache_dir,
                     args.max_seq_length,
-                    self.models['mention_embedding'].tokenizer)
+                    args.tokenizer)
 
-            torch.save(self.metadata, metadata_file)
+            torch.save(_metadata, metadata_file)
+
+        if split == 'train':
+            self.train_metadata = _metadata
+        elif split == 'val':
+            self.val_metadata = _metadata
+        else:
+            self.test_metadata = _metadata
 
     def set_optimizers_and_schedulers(self):
         args = self.args

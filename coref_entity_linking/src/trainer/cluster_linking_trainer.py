@@ -1,8 +1,9 @@
 from torch.utils.data import DataLoader, SequentialSampler
 
 from comm import all_gather, broadcast, get_world_size, get_rank, synchronize
-from data.datasets import MetaClusterDataset
-from data.dataloaders import MetaClusterDataLoader
+from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
+from data.dataloaders import (MetaClusterDataLoader,
+                              InferenceEmbeddingDataLoader)
 from model import MirrorEmbeddingModel
 from trainer.trainer import Trainer
 from utils import flatten
@@ -23,6 +24,7 @@ class ClusterLinkingTrainer(Trainer):
                     name='embedding_model'
                 )
         }
+        args.tokenizer = self.models['embedding_model'].tokenizer
     
     def create_train_dataloader(self):
         args = self.args
@@ -32,20 +34,17 @@ class ClusterLinkingTrainer(Trainer):
 
         if get_rank() == 0:
             # determine the set of gold clusters depending on the setting
-            if args.clustering_reach == 'within_doc':
+            if args.clustering_domain == 'within_doc':
                 clusters = flatten([list(doc.values()) 
-                        for doc in self.metadata.wdoc_clusters.values()])
-            elif args.clustering_reach == 'cross_doc':
-                clusters = list(self.metadata.xdoc_clusters.values())
+                        for doc in self.train_metadata.wdoc_clusters.values()])
+            elif args.clustering_domain == 'cross_doc':
+                clusters = list(self.train_metadata.xdoc_clusters.values())
             else:
-                raise ValueError('Invalid clustering_reach')
+                raise ValueError('Invalid clustering_domain')
 
-            # create the dataset
             self.train_dataset = MetaClusterDataset(clusters)
-
-            # create the dataloader
-            self.train_dataloader = MetaClusterDataLoader(args, self.train_dataset)
-        synchronize()
+            self.train_dataloader = MetaClusterDataLoader(
+                    args, self.train_dataset)
 
     def create_train_eval_dataloader(self):
         args = self.args
@@ -53,8 +52,18 @@ class ClusterLinkingTrainer(Trainer):
         # load and cache examples and get the metadata for the dataset
         self.load_and_cache_examples(split='train', evaluate=True)
 
-        embed()
-        exit()
+        if args.available_entities in ['candidates_only', 'knn_candidates']:
+            examples = flatten([[k] + v
+                    for k, v in self.train_metadata.midx2cand.items()])
+        elif args.available_entities == 'open_domain':
+            examples = list(self.train_metadata.idx2uid.keys())
+        else:
+            raise ValueError('Invalid available_entities')
+
+        self.train_eval_dataset = InferenceEmbeddingDataset(
+                args, examples, args.train_cache_dir)
+        self.train_eval_dataloader = InferenceEmbeddingDataLoader(
+                args, self.train_eval_dataset)
     
     def create_val_dataloader(self):
         pass
