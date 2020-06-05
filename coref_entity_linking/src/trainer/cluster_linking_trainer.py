@@ -1,12 +1,16 @@
 from torch.utils.data import DataLoader, SequentialSampler
 
-from comm import all_gather, broadcast, get_world_size, get_rank, synchronize
+from utils.comm import (all_gather,
+                        broadcast,
+                        get_world_size,
+                        get_rank,
+                        synchronize)
 from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
 from model import MirrorEmbeddingModel
 from trainer.trainer import Trainer
-from utils import flatten
+from utils.misc import flatten
 
 from IPython import embed
 
@@ -15,6 +19,7 @@ class ClusterLinkingTrainer(Trainer):
 
     def __init__(self, args):
         super(ClusterLinkingTrainer, self).__init__(args)
+        self.create_index()
     
     def create_models(self):
         args = self.args
@@ -70,6 +75,10 @@ class ClusterLinkingTrainer(Trainer):
 
     def create_test_dataloader(self):
         pass
+
+    def create_index(self):
+        embed()
+        exit()
 
     def train(self):
         args = self.args

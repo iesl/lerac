@@ -51,8 +51,8 @@ from data.data import (MentionClusteringProcessor,
                   get_index,
                   _read_candidates,
                   _read_mentions)
-from comm import all_gather, broadcast
-from utils import flatten, all_same, dict_merge_with
+from utils.comm import all_gather, broadcast
+from utils.misc import flatten, all_same, dict_merge_with
 
 from IPython import embed
 

@@ -54,7 +54,7 @@ from trainer.trainer import (MentionClusteringTrainer,
                              VanillaLinkingTrainer,
                              XDocClusterLinkingTrainer)
 from trainer.cluster_linking_trainer import ClusterLinkingTrainer
-from utils import initialize_exp
+from utils.misc import initialize_exp
 
 logger = logging.getLogger(__name__)
 
