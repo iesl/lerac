@@ -78,6 +78,7 @@ class MirrorEmbeddingModel(nn.Module):
         config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_HGHLGHT_TOKEN)
         config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
         config.pooling_strategy = args.pooling_strategy
+        config.seq_embed_dim = args.seq_embed_dim
         self.model = SequenceEmbeddingModel.from_pretrained(
                 args.model_name_or_path,
                 from_tf=bool('.ckpt' in args.model_name_or_path),
@@ -153,19 +154,6 @@ class MirrorEmbeddingModel(nn.Module):
             scores = 1.0 - torch.bmm(embeddings_a, embeddings_b).squeeze(0)
 
             return scores
-
-    def get_embeddings(self, dataset):
-        pass
-
-    def compute_scores_for_inference(self, dataset):
-        pass
-
-    def train_on_subset(self, dataset):
-        pass
-
-    def compute_topk_score_evaluation(self, dataset):
-        pass
-
 
 
 class ScalarAffineModel(nn.Module):

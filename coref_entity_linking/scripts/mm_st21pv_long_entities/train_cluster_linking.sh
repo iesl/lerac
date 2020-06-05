@@ -34,7 +34,10 @@ python -m torch.distributed.launch \
         --log_dir ${BASE_DIR}/logs/ \
         --do_train \
         --max_seq_length 128 \
+        --seq_embed_dim 128 \
         --pooling_strategy 'pool_highlighted_outputs' \
+        --clustering_domain 'cross_doc' \
+        --available_entities 'candidates_only' \
         --max_in_cluster_dist 0.1 \
         --margin 0.8 \
         --warmup_steps 0 \

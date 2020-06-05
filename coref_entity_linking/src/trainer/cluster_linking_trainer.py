@@ -10,6 +10,8 @@ from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
 from model import MirrorEmbeddingModel
 from trainer.trainer import Trainer
+from trainer.emb_sub_trainer import EmbeddingSubTrainer
+from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
 from utils.misc import flatten
 
 from IPython import embed
@@ -19,7 +21,13 @@ class ClusterLinkingTrainer(Trainer):
 
     def __init__(self, args):
         super(ClusterLinkingTrainer, self).__init__(args)
-        self.create_index()
+        self.create_sub_trainers()
+        if args.do_train or args.do_train_eval:
+            self.create_knn_index('train')
+        if args.do_val: # or args.evaluate_during_training:
+            self.create_knn_index('val')
+        if args.do_test:
+            self.create_knn_index('test')
     
     def create_models(self):
         args = self.args
@@ -30,6 +38,15 @@ class ClusterLinkingTrainer(Trainer):
                 )
         }
         args.tokenizer = self.models['embedding_model'].tokenizer
+
+    def create_sub_trainers(self):
+        args = self.args
+        self.sub_trainers = {}
+        for name, model in self.models.items():
+            if isinstance(model.module, MirrorEmbeddingModel):
+                self.sub_trainers[name] = EmbeddingSubTrainer(args, model)
+            else:
+                raise ValueError('module not supported by a sub trainer')
     
     def create_train_dataloader(self):
         args = self.args
@@ -76,9 +93,30 @@ class ClusterLinkingTrainer(Trainer):
     def create_test_dataloader(self):
         pass
 
-    def create_index(self):
-        embed()
-        exit()
+    def create_knn_index(self, split=None):
+        assert split == 'train' or split == 'val' or split == 'test'
+        args = self.args
+
+        NN_Index = (WithinDocNNIndex if args.clustering_domain == 'within_doc'
+                        else CrossDocNNIndex)
+        if split == 'train':
+            self.train_knn_index = NN_Index(
+                    args,
+                    self.sub_trainers['embedding_model'],
+                    self.train_eval_dataloader
+            )
+        elif split == 'val':
+            self.val_knn_index = NN_Index(
+                    args,
+                    self.sub_trainers['embedding_model'],
+                    self.val_dataloader
+            )
+        else:
+            self.test_knn_index = NN_Index(
+                    args,
+                    self.sub_trainers['embedding_model'],
+                    self.test_dataloader
+            )
 
     def train(self):
         args = self.args
@@ -92,25 +130,20 @@ class ClusterLinkingTrainer(Trainer):
             if get_rank() == 0:
                 try:
                     next_batch = next(data_iterator)
-                    # TODO: get negatives from index
+                    # TODO: get negatives from knn index
                 except StopIteration:
-                    # FIXME: this should deal with the scatter
                     next_batch = None
 
             synchronize()
-            # FIXME: this should be a scatter
             broadcast(next_batch, src=0)
             if next_batch is None:
                 break
 
             # FIXME: This should all go in `train_step`
-            #   TODO: run inference
+            #   TODO: build inference dataset give next_batch
+            #   TODO: run inference (can't just query the knn index!!!!)
             #   TODO: get supervised cluster dataset
             #   TODO: train on cluster dataset
-
-
-            
-
     
     def evaluate(self, split):
         pass

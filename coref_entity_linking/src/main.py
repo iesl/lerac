@@ -124,6 +124,10 @@ def get_args():
                         help="k for kNN for eval of coref candidates")
     parser.add_argument("--max_in_cluster_dist", default=0.0, type=float,
                         help="For clustering loss")
+    parser.add_argument("--seq_embed_dim",
+                        default=128,
+                        type=float,
+                        help="output dimension of embedding model")
     parser.add_argument("--pooling_strategy",
                         default='pool_all_outputs',
                         choices = ['pool_all_outputs', 'pool_highlighted_outputs'],

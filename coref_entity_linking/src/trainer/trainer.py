@@ -106,18 +106,17 @@ class Trainer(ABC):
         if args.do_test:
             self.create_test_dataloader()
 
-        if args.task_name != 'xdoc_cluster_linking':
-            for model_name in self.models.keys():
-                self.models[model_name].to(args.device)
+        for model_name in self.models.keys():
+            self.models[model_name].to(args.device)
 
-            if args.local_rank != -1:
-                for model_name in self.models.keys():
-                    self.models[model_name] = DDP( 
-                            self.models[model_name],
-                            device_ids=[args.local_rank],
-                            output_device=args.local_rank,
-                            find_unused_parameters=True
-                    )
+        if args.local_rank != -1:
+            for model_name in self.models.keys():
+                self.models[model_name] = DDP( 
+                        self.models[model_name],
+                        device_ids=[args.local_rank],
+                        output_device=args.local_rank,
+                        find_unused_parameters=True
+                )
 
     def load_and_cache_examples(self, split=None, evaluate=False):
 
