@@ -28,10 +28,10 @@ from transformers import (BertConfig,
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from utils import (START_HGHLGHT_TOKEN,
-                   END_HGHLGHT_TOKEN,
-                   flatten,
-                   DistributedCache)
+from utils.misc import (START_HGHLGHT_TOKEN,
+                        END_HGHLGHT_TOKEN,
+                        flatten,
+                        DistributedCache)
 
 from IPython import embed
 
