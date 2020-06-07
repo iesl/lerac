@@ -600,7 +600,7 @@ class SequenceEmbeddingModel(BertPreTrainedModel):
 
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.embedding_layer = nn.Linear(config.hidden_size, config.hidden_size)
+        self.embedding_layer = nn.Linear(config.hidden_size, config.seq_embed_dim)
 
         self.init_weights()
 

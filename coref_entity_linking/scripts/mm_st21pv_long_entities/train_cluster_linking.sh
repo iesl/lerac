@@ -24,7 +24,7 @@ val_domains=("val" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058
 test_domains=("test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204")
 
 python -m torch.distributed.launch \
-    --nproc_per_node 1 \
+    --nproc_per_node 6 \
     src/main.py \
         --data_dir data/${DATASET}/ \
         --model_type bert \
@@ -44,8 +44,8 @@ python -m torch.distributed.launch \
         --learning_rate 5e-5 \
         --max_grad_norm 1.0 \
         --num_clusters_per_macro_batch 16 \
-        --per_gpu_train_batch 6 \
-        --per_gpu_infer_batch 96 \
+        --per_gpu_train_batch 64 \
+        --per_gpu_infer_batch 384 \
         --num_train_epochs 6.0 \
         --evaluate_during_training \
         --logging_steps 25 \

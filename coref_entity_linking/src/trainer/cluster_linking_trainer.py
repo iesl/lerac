@@ -12,7 +12,7 @@ from model import MirrorEmbeddingModel
 from trainer.trainer import Trainer
 from trainer.emb_sub_trainer import EmbeddingSubTrainer
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
-from utils.misc import flatten
+from utils.misc import flatten, unique
 
 from IPython import embed
 
@@ -54,19 +54,18 @@ class ClusterLinkingTrainer(Trainer):
         # load and cache examples and get the metadata for the dataset
         self.load_and_cache_examples(split='train', evaluate=False)
 
-        if get_rank() == 0:
-            # determine the set of gold clusters depending on the setting
-            if args.clustering_domain == 'within_doc':
-                clusters = flatten([list(doc.values()) 
-                        for doc in self.train_metadata.wdoc_clusters.values()])
-            elif args.clustering_domain == 'cross_doc':
-                clusters = list(self.train_metadata.xdoc_clusters.values())
-            else:
-                raise ValueError('Invalid clustering_domain')
+        # determine the set of gold clusters depending on the setting
+        if args.clustering_domain == 'within_doc':
+            clusters = flatten([list(doc.values()) 
+                    for doc in self.train_metadata.wdoc_clusters.values()])
+        elif args.clustering_domain == 'cross_doc':
+            clusters = list(self.train_metadata.xdoc_clusters.values())
+        else:
+            raise ValueError('Invalid clustering_domain')
 
-            self.train_dataset = MetaClusterDataset(clusters)
-            self.train_dataloader = MetaClusterDataLoader(
-                    args, self.train_dataset)
+        self.train_dataset = MetaClusterDataset(clusters)
+        self.train_dataloader = MetaClusterDataLoader(
+                args, self.train_dataset)
 
     def create_train_eval_dataloader(self):
         args = self.args
@@ -81,12 +80,12 @@ class ClusterLinkingTrainer(Trainer):
             examples = list(self.train_metadata.idx2uid.keys())
         else:
             raise ValueError('Invalid available_entities')
-
+        examples = unique(examples)
         self.train_eval_dataset = InferenceEmbeddingDataset(
                 args, examples, args.train_cache_dir)
         self.train_eval_dataloader = InferenceEmbeddingDataLoader(
                 args, self.train_eval_dataset)
-    
+
     def create_val_dataloader(self):
         pass
 
@@ -130,6 +129,7 @@ class ClusterLinkingTrainer(Trainer):
             if get_rank() == 0:
                 try:
                     next_batch = next(data_iterator)
+                    ### TODO: !!! HERE !!!
                     # TODO: get negatives from knn index
                 except StopIteration:
                     next_batch = None

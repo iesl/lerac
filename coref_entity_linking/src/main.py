@@ -126,7 +126,7 @@ def get_args():
                         help="For clustering loss")
     parser.add_argument("--seq_embed_dim",
                         default=128,
-                        type=float,
+                        type=int,
                         help="output dimension of embedding model")
     parser.add_argument("--pooling_strategy",
                         default='pool_all_outputs',

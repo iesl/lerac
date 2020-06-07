@@ -18,6 +18,7 @@ class NearestNeighborIndex(object):
     def refresh_index(self):
         """ Refresh the index by recomputing the embeddings for all points. """
         synchronize()
+        # TODO: add logger call here
         self._compute_embeddings()
 
     def get_knn_all(self, query_idxs):
