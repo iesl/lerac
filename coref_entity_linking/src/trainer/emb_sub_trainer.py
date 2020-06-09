@@ -1,11 +1,18 @@
+import logging
 import numpy as np
+from scipy.sparse import coo_matrix
 import torch
 from tqdm import tqdm
 
+from data.datasets import InferenceEmbeddingDataset
+from data.dataloaders import InferenceEmbeddingDataLoader
 from utils.comm import get_rank, all_gather, synchronize
-from utils.misc import flatten
+from utils.misc import flatten, unique
 
 from IPython import embed
+
+
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingSubTrainer(object):
@@ -73,8 +80,58 @@ class EmbeddingSubTrainer(object):
         synchronize()
         return idxs, embeds
 
-    def compute_scores_for_inference(self, dataset):
-        pass
+    def compute_scores_for_inference(self, clusters_mx, per_example_negs):
+        # TODO: add description here
+        args = self.args
+
+        # get all of the unique examples 
+        examples = clusters_mx.data.tolist()
+        examples.extend(flatten(per_example_negs.tolist()))
+        examples = unique(examples)
+
+        # create dataset and dataloader
+        dataset = InferenceEmbeddingDataset(
+                args, examples, args.train_cache_dir)
+        dataloader = InferenceEmbeddingDataLoader(args, dataset)
+
+        # get the unique idxs and embeds for each idx
+        idxs, embeds = self.get_embeddings(dataloader, evaluate=True)
+
+        sparse_graph = None
+        if get_rank() == 0:
+            # create inverse index for mapping
+            inverse_idxs = {v : k for k, v in enumerate(idxs)}
+
+            ## make the list of pairs of dot products we need
+            _row = clusters_mx.row
+            # positives:
+            local_pos_a, local_pos_b = np.where(
+                    np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
+            )
+            a = clusters_mx.data[local_pos_a]
+            b = clusters_mx.data[local_pos_b]
+            # negatives:
+            local_neg_a = np.tile(
+                np.arange(per_example_negs.shape[0])[:np.newaxis],
+                (1, per_example_negs.shape[1])
+            ).flatten()
+            neg_a = clusters_mx.data[local_neg_a]
+            neg_b = per_example_negs.flatten()
+
+            # create subset of the sparse graph we care about
+            a = np.concatenate((a, neg_a), axis=0)
+            b = np.concatenate((b, neg_b), axis=0)
+            edges = list(zip(a, b))
+            affinities = [np.dot(embeds[inverse_idxs[i]],
+                                 embeds[inverse_idxs[j]]) for i, j in edges]
+            # convert to coo_matrix
+            edges = np.asarray(edges).T
+            affinities = np.asarray(affinities)
+            _sparse_num = np.max(edges) + 1
+            sparse_graph = coo_matrix((affinities, edges),
+                                      shape=(_sparse_num, _sparse_num))
+        synchronize()
+        return sparse_graph
 
     def train_on_subset(self, dataset):
         pass

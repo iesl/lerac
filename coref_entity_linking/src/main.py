@@ -120,7 +120,7 @@ def get_args():
                         help="margin for max-margin loss")
     parser.add_argument("--alpha", default=None, type=float,
                         help="alpha for exponential linkage")
-    parser.add_argument("--k", default=None, type=int,
+    parser.add_argument("--k", default=32, type=int,
                         help="k for kNN for eval of coref candidates")
     parser.add_argument("--max_in_cluster_dist", default=0.0, type=float,
                         help="For clustering loss")

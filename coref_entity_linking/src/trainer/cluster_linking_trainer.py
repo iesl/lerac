@@ -1,3 +1,4 @@
+import logging
 from torch.utils.data import DataLoader, SequentialSampler
 
 from utils.comm import (all_gather,
@@ -9,12 +10,16 @@ from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
 from model import MirrorEmbeddingModel
+from clustering import build_triplet_dataset
 from trainer.trainer import Trainer
 from trainer.emb_sub_trainer import EmbeddingSubTrainer
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
 from utils.misc import flatten, unique
 
 from IPython import embed
+
+
+logger = logging.getLogger(__name__)
 
 
 class ClusterLinkingTrainer(Trainer):
@@ -117,33 +122,51 @@ class ClusterLinkingTrainer(Trainer):
                     self.test_dataloader
             )
 
+    def train_step(self, batch):
+        #TODO: build inference dataset give next_batch
+        #TODO: run inference (can't just query the knn index!!!!)
+        #TODO: get supervised cluster dataset
+        #TODO: train on cluster dataset
+        args = self.args
+        clusters_mx, per_example_negs = batch
+        sub_trainer = self.sub_trainers['embedding_model']
+        sparse_graph = sub_trainer.compute_scores_for_inference(
+                clusters_mx, per_example_negs)
+        triplet_dataset = build_triplet_dataset(clusters_mx, sparse_graph)
+        embed()
+        exit()
+
     def train(self):
         args = self.args
 
+        global_step = 0
+
         # FIXME: this only does one epoch as of now
+        logger.info('Starting training...')
         if get_rank() == 0:
             data_iterator = iter(self.train_dataloader)
-        
+
         batch = None
         while True:
             if get_rank() == 0:
                 try:
+                    logger.info('Getting batch...')
                     next_batch = next(data_iterator)
-                    ### TODO: !!! HERE !!!
-                    # TODO: get negatives from knn index
+                    logger.info('Computing negs...')
+                    negs = self.train_knn_index.get_knn_negatives(next_batch)
+                    logger.info('Done.')
+                    batch = (next_batch, negs)
                 except StopIteration:
-                    next_batch = None
+                    batch = None
 
             synchronize()
-            broadcast(next_batch, src=0)
-            if next_batch is None:
+            logger.info('Broadcasting batch...')
+            batch = broadcast(batch, src=0)
+            if batch is None:
                 break
+            logger.info('Done')
 
-            # FIXME: This should all go in `train_step`
-            #   TODO: build inference dataset give next_batch
-            #   TODO: run inference (can't just query the knn index!!!!)
-            #   TODO: get supervised cluster dataset
-            #   TODO: train on cluster dataset
-    
+            self.train_step(batch)
+
     def evaluate(self, split):
         pass
