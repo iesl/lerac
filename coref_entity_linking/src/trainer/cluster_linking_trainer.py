@@ -123,8 +123,6 @@ class ClusterLinkingTrainer(Trainer):
             )
 
     def train_step(self, batch):
-        #TODO: build inference dataset give next_batch
-        #TODO: run inference (can't just query the knn index!!!!)
         #TODO: get supervised cluster dataset
         #TODO: train on cluster dataset
         args = self.args
