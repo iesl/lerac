@@ -10,7 +10,7 @@ from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
 from model import MirrorEmbeddingModel
-from clustering import build_triplet_dataset
+from clustering import build_triplet_datasets, get_all_pairs
 from trainer.trainer import Trainer
 from trainer.emb_sub_trainer import EmbeddingSubTrainer
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
@@ -130,8 +130,17 @@ class ClusterLinkingTrainer(Trainer):
         sub_trainer = self.sub_trainers['embedding_model']
         sparse_graph = sub_trainer.compute_scores_for_inference(
                 clusters_mx, per_example_negs)
-        triplet_dataset = build_triplet_dataset(clusters_mx, sparse_graph)
-        embed()
+        triplet_datasets = None
+        if get_rank() == 0:
+            # NOTE: we will have other possible pair generating functions
+            pairs_collection = get_all_pairs(clusters_mx, sparse_graph)
+            triplet_datasets = build_triplet_datasets(args, pairs_collection)
+        synchronize()
+        triplet_datasets = broadcast(triplet_datasets, src=0)
+        
+        if get_rank() == 0:
+            embed()
+        synchronize()
         exit()
 
     def train(self):

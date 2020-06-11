@@ -180,6 +180,7 @@ class ZeshelPreprocessor(object):
         idx2uid = defaultdict(lambda : None)
         midx2cand = defaultdict(list)
         midx2eidx = defaultdict(lambda : None)
+        midx2type = defaultdict(lambda : None)
         wdoc_clusters = defaultdict(lambda : defaultdict(set))
         xdoc_clusters = defaultdict(set)
 
@@ -213,6 +214,7 @@ class ZeshelPreprocessor(object):
             ctxt_uid = mention['context_document_id']
             label_uid = mention['label_document_id']
             label_idx = uid2idx[label_uid]
+            mention_type = mention['category']
 
             # track metadata
             num_mentions += 1
@@ -221,6 +223,7 @@ class ZeshelPreprocessor(object):
             midx2cand[global_idx] = list(map(lambda uid : uid2idx[uid],
                                              candidates.get(uid, [])))
             midx2eidx[global_idx] = label_idx
+            midx2eidx[global_idx] = mention_type
             wdoc_clusters[ctxt_uid][label_idx].add(label_idx)
             wdoc_clusters[ctxt_uid][label_idx].add(global_idx)
             xdoc_clusters[label_idx].add(global_idx)
@@ -246,6 +249,7 @@ class ZeshelPreprocessor(object):
             'idx2uid' : idx2uid,
             'midx2cand' : midx2cand,
             'midx2eidx' : midx2eidx,
+            'midx2type' : midx2type,
             'wdoc_clusters' : wdoc_clusters,
             'xdoc_clusters' : xdoc_clusters,
             'mentions' : mentions,

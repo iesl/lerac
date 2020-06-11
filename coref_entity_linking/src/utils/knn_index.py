@@ -64,12 +64,14 @@ class NearestNeighborIndex(object):
         # FIXME: only for testing
         tmp_fname = 'knn_index.pkl'
         if os.path.exists(tmp_fname):
-            with open(tmp_fname, 'rb') as f:
-                self.idxs, self.X = pickle.load(f)
+            if get_rank() == 0:
+                with open(tmp_fname, 'rb') as f:
+                    self.idxs, self.X = pickle.load(f)
         else:
             self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
-            with open(tmp_fname, 'wb') as f:
-                pickle.dump((self.idxs, self.X), f)
+            if get_rank() == 0:
+                with open(tmp_fname, 'wb') as f:
+                    pickle.dump((self.idxs, self.X), f)
 
     def _build_and_query_knn(self, index_mx, query_mx, k):
         assert index_mx.shape[1] == query_mx.shape[1]

@@ -125,11 +125,35 @@ class TripletEmbeddingDataset(DistributedSafeDataset):
     For triplet training.
     """
     def __init__(self, args, examples, example_dir):
-        super(TripletDataset, self).__init__(args, examples)
+        super(TripletEmbeddingDataset, self).__init__(args, examples)
         self.example_dir = example_dir
 
     def __getitem__(self, index):
-        raise NotImplementedError('TODO')
+        if index >= len(self.examples):
+            index = random.randint(0, len(self) - 1)
+        ids = self.examples[index]
+        example_idx = []
+        input_ids = []
+        attention_mask = []
+        token_type_ids = []
+        for _id in ids:
+            _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
+            _example_features = _create_bi_encoder_input(
+                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer
+            )
+            _input_ids, _attention_mask, _token_type_ids = _example_features
+
+            example_idx.append(torch.tensor(_id, dtype=torch.long))
+            input_ids.append(torch.tensor(_input_ids, dtype=torch.long))
+            attention_mask.append(
+                    torch.tensor(_attention_mask, dtype=torch.long))
+            token_type_ids.append(
+                    torch.tensor(_token_type_ids, dtype=torch.long))
+
+        return (torch.stack(example_idx),
+                torch.stack(input_ids),
+                torch.stack(attention_mask),
+                torch.stack(token_type_ids))
 
 
 class ScaledPairEmbeddingDataset(DistributedSafeDataset):
