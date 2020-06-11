@@ -132,6 +132,6 @@ dmypy.json
 .*.swp
 .*.swo
 
-*data/
+coref_entity_linking/data/
 *models/
 *experiments/
