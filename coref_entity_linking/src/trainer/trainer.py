@@ -157,8 +157,10 @@ class Trainer(ABC):
         metadata_file = os.path.join(cache_dir, 'metadata.pt')
 
         if (os.path.exists(metadata_file) and not args.overwrite_cache):
+            logger.info('Loading cached metadata and dataset.')
             _metadata = torch.load(metadata_file)
         else:
+            logger.info('Creating metadata and dataset...')
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
@@ -172,6 +174,7 @@ class Trainer(ABC):
                     args.tokenizer)
 
             torch.save(_metadata, metadata_file)
+            logger.info('Done.')
 
         if split == 'train':
             self.train_metadata = _metadata

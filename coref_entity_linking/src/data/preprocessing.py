@@ -223,7 +223,7 @@ class ZeshelPreprocessor(object):
             midx2cand[global_idx] = list(map(lambda uid : uid2idx[uid],
                                              candidates.get(uid, [])))
             midx2eidx[global_idx] = label_idx
-            midx2eidx[global_idx] = mention_type
+            midx2type[global_idx] = mention_type
             wdoc_clusters[ctxt_uid][label_idx].add(label_idx)
             wdoc_clusters[ctxt_uid][label_idx].add(global_idx)
             xdoc_clusters[label_idx].add(global_idx)

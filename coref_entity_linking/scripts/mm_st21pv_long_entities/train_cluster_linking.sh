@@ -39,17 +39,21 @@ python -m torch.distributed.launch \
         --pooling_strategy 'pool_highlighted_outputs' \
         --clustering_domain 'cross_doc' \
         --available_entities 'candidates_only' \
+        --training_method 'triplet' \
+        --pair_gen_method 'all_pairs' \
+        --k 16 \
         --max_in_cluster_dist 0.1 \
-        --margin 0.8 \
+        --margin 0.5 \
         --warmup_steps 0 \
         --learning_rate 5e-5 \
         --max_grad_norm 1.0 \
         --num_clusters_per_macro_batch 16 \
-        --per_gpu_train_batch 256 \
-        --per_gpu_infer_batch 1024 \
-        --num_train_epochs 6.0 \
+        --per_gpu_train_batch 32 \
+        --per_gpu_infer_batch 256 \
+        --num_train_epochs 6 \
         --evaluate_during_training \
         --logging_steps 25 \
+        --knn_refresh_steps 1 \
         --save_steps 300 \
         --train_domains ${train_domains[@]} \
         --train_mention_entity_scores ${BASE_DIR}/experiments/mm_st21pv_long_entities/vanilla_linking/checkpoint-178341/mention_entity_scores.train.pkl \

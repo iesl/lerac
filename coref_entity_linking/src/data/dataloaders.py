@@ -34,6 +34,15 @@ class MetaClusterDataLoader(DataLoader):
                           shape=(len(batch), self.max_cluster_size))
 
 
+def _custom_distributed_sampler(dataset):
+    return DistributedSampler(
+            dataset,
+            num_replicas=get_world_size(),
+            rank=get_rank(),
+            shuffle=False
+    )
+
+
 class InferenceEmbeddingDataLoader(DataLoader):
     """
     Custom DataLoader for InferenceEmbeddingDataset.
@@ -41,17 +50,22 @@ class InferenceEmbeddingDataLoader(DataLoader):
     def __init__(self, args, dataset):
         super(InferenceEmbeddingDataLoader, self).__init__(
                 dataset,
-                sampler=self._custom_distributed_sampler(dataset),
+                sampler=_custom_distributed_sampler(dataset),
                 batch_size=args.infer_batch_size,
                 num_workers=args.num_dataloader_workers,
                 pin_memory=True,
         )
 
-    def _custom_distributed_sampler(self, dataset):
-        return DistributedSampler(
-                dataset,
-                num_replicas=get_world_size(),
-                rank=get_rank(),
-                shuffle=False
-        )
 
+class TripletEmbeddingDataLoader(DataLoader):
+    """
+    Custom DataLoader for TripletEmbeddingDataset.
+    """
+    def __init__(self, args, dataset):
+        super(TripletEmbeddingDataLoader, self).__init__(
+                dataset,
+                sampler=_custom_distributed_sampler(dataset),
+                batch_size=max(args.train_batch_size // 3, 1),
+                num_workers=args.num_dataloader_workers,
+                pin_memory=True,
+        )

@@ -1,11 +1,14 @@
 import logging
 import numpy as np
 from scipy.sparse import coo_matrix
+import time
 import torch
+import torch.nn.functional as F
 from tqdm import tqdm
 
 from data.datasets import InferenceEmbeddingDataset
-from data.dataloaders import InferenceEmbeddingDataLoader
+from data.dataloaders import (InferenceEmbeddingDataLoader,
+                              TripletEmbeddingDataLoader)
 from utils.comm import get_rank, all_gather, synchronize
 from utils.misc import flatten, unique
 
@@ -19,10 +22,16 @@ class EmbeddingSubTrainer(object):
     """
     Class to help with training and evaluation processes.
     """
-    def __init__(self, args, model):
+    def __init__(self, args, model, optimizer, scheduler):
         # we assume that `model` is a DDP pytorch model and is on the GPU
         self.args = args
         self.model = model
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        if args.training_method == 'triplet':
+            self.train_on_subset = self._train_triplet
+        else:
+            raise ValueError('training method not implemented yet')
 
     def get_embeddings(self, dataloader, evaluate=True):
         args = self.args
@@ -54,7 +63,9 @@ class EmbeddingSubTrainer(object):
             
         batch_iterator = tqdm(dataloader,
                               desc='Getting embeddings...',
-                              disable=(not evaluate or args.disable_logging))
+                              disable=(not evaluate 
+                                       or get_rank() != 0
+                                       or args.disable_logging))
         for batch in batch_iterator:
             batch = tuple(t.to(args.device, non_blocking=True) for t in batch)
             with torch.no_grad():
@@ -95,7 +106,7 @@ class EmbeddingSubTrainer(object):
         dataloader = InferenceEmbeddingDataLoader(args, dataset)
 
         # get the unique idxs and embeds for each idx
-        idxs, embeds = self.get_embeddings(dataloader, evaluate=True)
+        idxs, embeds = self.get_embeddings(dataloader, evaluate=False)
 
         sparse_graph = None
         if get_rank() == 0:
@@ -112,7 +123,7 @@ class EmbeddingSubTrainer(object):
             b = clusters_mx.data[local_pos_b]
             # negatives:
             local_neg_a = np.tile(
-                np.arange(per_example_negs.shape[0])[:np.newaxis],
+                np.arange(per_example_negs.shape[0])[:, np.newaxis],
                 (1, per_example_negs.shape[1])
             ).flatten()
             neg_a = clusters_mx.data[local_neg_a]
@@ -130,12 +141,61 @@ class EmbeddingSubTrainer(object):
             _sparse_num = np.max(edges) + 1
             sparse_graph = coo_matrix((affinities, edges),
                                       shape=(_sparse_num, _sparse_num))
+
         synchronize()
         return sparse_graph
 
-    def train_on_subset(self, dataset):
-        pass
+    def _train_triplet(self, dataset_list):
+        args = self.args
+
+        losses = [] 
+        time_per_dataset = []
+        dataset_sizes = []
+
+        self.model.train()
+        self.model.zero_grad()
+        for dataset in dataset_list:
+            _dataset_start_time = time.time()
+            dataset_sizes.append(len(dataset))
+            dataloader = TripletEmbeddingDataLoader(args, dataset)
+            for batch in dataloader:
+                batch = tuple(t.to(args.device) for t in batch)
+                inputs = {'input_ids_a':      batch[1],
+                          'attention_mask_a': batch[2],
+                          'token_type_ids_a': batch[3]}
+                outputs = self.model(**inputs)
+
+                pos_neg_dot_prods = torch.sum(
+                        outputs[:,0:1,:] * outputs[:,1:,:],
+                        dim=-1
+                )
+                loss = torch.mean(
+                    F.relu(
+                        pos_neg_dot_prods[:, 1]   # negative dot products
+                        - pos_neg_dot_prods[:, 0] # positive dot products
+                        + args.margin
+                    )
+                )
+                losses.append(loss.item())
+                loss.backward()
+
+                torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(),
+                        args.max_grad_norm
+                )
+                self.optimizer.step()
+                self.scheduler.step()
+                self.model.zero_grad()
+            time_per_dataset.append(time.time() - _dataset_start_time)
+
+        total_time = sum(time_per_dataset)
+        total_num_examples = 3 * sum(dataset_sizes) # because triplets
+        return {'loss' : np.mean(losses),
+                'time_per_example': total_time / total_num_examples,
+                'num_examples': total_num_examples}
 
     def compute_topk_score_evaluation(self, dataset):
         pass
 
+    def save_model(self, global_step):
+        self.model.module.save_model(suffix='checkpoint-{}'.format(global_step))

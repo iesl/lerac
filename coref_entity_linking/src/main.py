@@ -152,6 +152,16 @@ def get_args():
                                    'open_domain'],
                         type=str,
                         help="what to consider when choosing negative entities")
+    parser.add_argument("--pair_gen_method",
+                        default='all_pairs',
+                        choices = ['all_pairs', 'mst', 'explink'],
+                        type=str,
+                        help="method for generating pairs")
+    parser.add_argument("--training_method",
+                        default='triplet',
+                        choices = ['triplet', 'sigmoid', 'softmax', 'accum_max_margin'],
+                        type=str,
+                        help="method of training on pairs")
 
     parser.add_argument("--num_clusters_per_macro_batch", default=8, type=int,
                         help="num clusters to consider in outer-loop batch")
@@ -169,7 +179,7 @@ def get_args():
                         help="Epsilon for Adam optimizer.")
     parser.add_argument("--max_grad_norm", default=1.0, type=float,
                         help="Max gradient norm.")
-    parser.add_argument("--num_train_epochs", default=3.0, type=float,
+    parser.add_argument("--num_train_epochs", default=3, type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--max_steps", default=-1, type=int,
                         help="If > 0: set total number of training steps to perform. Override num_train_epochs.")
@@ -178,6 +188,8 @@ def get_args():
 
     parser.add_argument('--logging_steps', type=int, default=50,
                         help="Log every X updates steps.")
+    parser.add_argument('--knn_refresh_steps', type=int, default=100,
+                        help="Save checkpoint every X updates steps.")
     parser.add_argument('--save_steps', type=int, default=50,
                         help="Save checkpoint every X updates steps.")
     parser.add_argument("--eval_all_checkpoints", action='store_true',

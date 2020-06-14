@@ -3,6 +3,8 @@ import pickle
 import logging
 import faiss
 import numpy as np
+import numpy.ma as ma
+from tqdm import tqdm
 
 from utils.comm import get_rank, synchronize
 
@@ -29,15 +31,46 @@ class NearestNeighborIndex(object):
         # TODO: add logger call here
         self._compute_embeddings()
 
-    def get_knn_all(self, query_idxs):
+    def get_knn_all(self, query_idxs, k=None):
         """ Consider all points in index when answering the query. """
+        k = self.args.k if k is None else k
         assert get_rank() == 0
-        pass
+        in_query_mask = np.isin(self.idxs, query_idxs)
+        assert np.sum(in_query_mask) == query_idxs.size
+        in_query_X = self.X[in_query_mask]
+        _, I = self._build_and_query_knn(self.X, in_query_X, k+1)
+        remap = lambda i : self.idxs[i]
+        v_remap = np.vectorize(remap)
+        I = v_remap(I)
+        return I[:,1:]
+
+    def get_knn_restricted(self, query_idxs, restriction_map, shared_idxs=[]):
+        """ Consider restricted (+shared) points when answering the query. """
+        assert get_rank() == 0
+
+        # compute unrestricted knn
+        buffer_const = 3
+        query_idxs = np.asarray(query_idxs)
+        unrestricted_knn = self.get_knn_all(query_idxs,
+                                            k=buffer_const*self.args.k)
+        
+        # create restricted knn
+        shared_mask = np.isin(unrestricted_knn, shared_idxs)
+        restricted_mask_list = []
+        for i, q_idx in enumerate(query_idxs):
+            restricted_mask_list.append(
+                np.isin(unrestricted_knn[i], restriction_map[q_idx])
+            )
+        restricted_mask = np.vstack(restricted_mask_list) | shared_mask
+        restricted_knn = ma.array(unrestricted_knn, mask=restricted_mask)
+
+        return restricted_knn
 
     def get_knn_negatives(self, query_clusters):
         """ Consider only out of cluster points when awnsering the query. """
         assert get_rank() == 0
         in_query_mask = np.isin(self.idxs, query_clusters.data)
+        assert np.sum(in_query_mask) == query_clusters.data.size
         out_query_mask = ~in_query_mask
 
         # get in-query and out-query representations
@@ -65,6 +98,7 @@ class NearestNeighborIndex(object):
         tmp_fname = 'knn_index.pkl'
         if os.path.exists(tmp_fname):
             if get_rank() == 0:
+                logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
                 with open(tmp_fname, 'rb') as f:
                     self.idxs, self.X = pickle.load(f)
         else:
@@ -73,11 +107,16 @@ class NearestNeighborIndex(object):
                 with open(tmp_fname, 'wb') as f:
                     pickle.dump((self.idxs, self.X), f)
 
-    def _build_and_query_knn(self, index_mx, query_mx, k):
-        assert index_mx.shape[1] == query_mx.shape[1]
+        #self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+
+    def _build_and_query_knn(self,
+                             index_mx,
+                             query_mx,
+                             k,
+                             n_cells=200,
+                             n_probe=75):
         # Can change `n_cells`, `n_probe` as hyperparameters for knn search
-        n_cells = 200
-        n_probe = 75
+        assert index_mx.shape[1] == query_mx.shape[1]
         d = index_mx.shape[1]
         quantizer = faiss.IndexFlat(d, faiss.METRIC_INNER_PRODUCT)
         knn_index = faiss.IndexIVFFlat(

@@ -1,5 +1,8 @@
 import logging
+from functools import reduce
+import numpy as np
 from torch.utils.data import DataLoader, SequentialSampler
+from tqdm import tqdm, trange
 
 from utils.comm import (all_gather,
                         broadcast,
@@ -10,11 +13,14 @@ from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
 from model import MirrorEmbeddingModel
-from clustering import build_triplet_datasets, get_all_pairs
+from clustering import (TripletDatasetBuilder,
+                        SigmoidDatasetBuilder,
+                        SoftmaxDatasetBuilder,
+                        AccumMaxMarginDatasetBuilder)
 from trainer.trainer import Trainer
 from trainer.emb_sub_trainer import EmbeddingSubTrainer
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
-from utils.misc import flatten, unique
+from utils.misc import flatten, unique, dict_merge_with
 
 from IPython import embed
 
@@ -26,15 +32,31 @@ class ClusterLinkingTrainer(Trainer):
 
     def __init__(self, args):
         super(ClusterLinkingTrainer, self).__init__(args)
+
+        # create sub-trainers for models
         self.create_sub_trainers()
+
+        # create knn_index and supervised clustering dataset builder
         if args.do_train or args.do_train_eval:
             self.create_knn_index('train')
+            if args.do_train:
+                assert (args.pair_gen_method == 'all_pairs'
+                        or args.training_method == 'accum_max_margin')
+                if args.training_method == 'triplet':
+                    self.dataset_builder = TripletDatasetBuilder(args)
+                elif args.training_method == 'sigmoid':
+                    self.dataset_builder = SigmoidDatasetBuilder(args)
+                elif args.training_method == 'softmax':
+                    self.dataset_builder = SoftmaxDatasetBuilder(args)
+                else:
+                    self.dataset_builder = AccumMaxMarginDatasetBuilder(args)
         if args.do_val: # or args.evaluate_during_training:
             self.create_knn_index('val')
         if args.do_test:
             self.create_knn_index('test')
     
     def create_models(self):
+        logger.info('Creating models.')
         args = self.args
         self.models = {
                 'embedding_model': MirrorEmbeddingModel(
@@ -45,11 +67,14 @@ class ClusterLinkingTrainer(Trainer):
         args.tokenizer = self.models['embedding_model'].tokenizer
 
     def create_sub_trainers(self):
+        logger.info('Creating sub-trainers.')
         args = self.args
         self.sub_trainers = {}
         for name, model in self.models.items():
+            optimizer = self.optimizers[name]
+            scheduler = self.schedulers[name]
             if isinstance(model.module, MirrorEmbeddingModel):
-                self.sub_trainers[name] = EmbeddingSubTrainer(args, model)
+                self.sub_trainers[name] = EmbeddingSubTrainer(args, model, optimizer, scheduler)
             else:
                 raise ValueError('module not supported by a sub trainer')
     
@@ -81,6 +106,7 @@ class ClusterLinkingTrainer(Trainer):
         if args.available_entities in ['candidates_only', 'knn_candidates']:
             examples = flatten([[k] + v
                     for k, v in self.train_metadata.midx2cand.items()])
+            examples.extend(self.train_metadata.midx2eidx.values())
         elif args.available_entities == 'open_domain':
             examples = list(self.train_metadata.idx2uid.keys())
         else:
@@ -123,57 +149,95 @@ class ClusterLinkingTrainer(Trainer):
             )
 
     def train_step(self, batch):
-        #TODO: get supervised cluster dataset
-        #TODO: train on cluster dataset
         args = self.args
+
+        # get the batch of clusters and approx negs for each individual example
         clusters_mx, per_example_negs = batch
+
+        # compute scores using up-to-date model
         sub_trainer = self.sub_trainers['embedding_model']
         sparse_graph = sub_trainer.compute_scores_for_inference(
                 clusters_mx, per_example_negs)
-        triplet_datasets = None
+
+        # create custom datasets for training
+        dataset_list = None
         if get_rank() == 0:
-            # NOTE: we will have other possible pair generating functions
-            pairs_collection = get_all_pairs(clusters_mx, sparse_graph)
-            triplet_datasets = build_triplet_datasets(args, pairs_collection)
-        synchronize()
-        triplet_datasets = broadcast(triplet_datasets, src=0)
-        
-        if get_rank() == 0:
-            embed()
-        synchronize()
-        exit()
+            dataset_list = self.dataset_builder(clusters_mx, sparse_graph)
+        dataset_list = broadcast(dataset_list, src=0)
+
+        # train on datasets
+        return_dict = sub_trainer.train_on_subset(dataset_list)
+
+        return return_dict
 
     def train(self):
         args = self.args
 
         global_step = 0
+        log_return_dicts = []
 
         # FIXME: this only does one epoch as of now
         logger.info('Starting training...')
-        if get_rank() == 0:
-            data_iterator = iter(self.train_dataloader)
 
-        batch = None
-        while True:
+        for epoch in range(args.num_train_epochs):
+            logger.info('********** [START] epoch: {} **********'.format(epoch))
+            
+            num_batches = None
             if get_rank() == 0:
-                try:
-                    logger.info('Getting batch...')
-                    next_batch = next(data_iterator)
-                    logger.info('Computing negs...')
-                    negs = self.train_knn_index.get_knn_negatives(next_batch)
+                data_iterator = iter(self.train_dataloader)
+                num_batches = len(data_iterator)
+            num_batches = broadcast(num_batches, src=0)
+
+            batch = None
+            for _ in trange(num_batches,
+                            desc='Epoch: {} - Batches'.format(epoch),
+                            disable=(get_rank() != 0 or args.disable_logging)):
+                # get batch from rank0 and broadcast it to the other processes
+                if get_rank() == 0:
+                    try:
+                        next_batch = next(data_iterator)
+                        negs = self.train_knn_index.get_knn_negatives(next_batch)
+                        batch = (next_batch, negs)
+                    except StopIteration:
+                        batch = None
+                batch = broadcast(batch, src=0)
+                if batch is None:
+                    break
+
+                # run train_step
+                log_return_dicts.append(self.train_step(batch))
+                global_step += 1
+
+                # logging stuff for babysitting
+                if global_step % args.logging_steps == 0:
+                    avg_return_dict = reduce(dict_merge_with, log_return_dicts)
+                    for stat_name, stat_value in avg_return_dict.items():
+                        logger.info('Average %s: %s at global step: %s',
+                                stat_name,
+                                str(stat_value/args.logging_steps),
+                                str(global_step)
+                        )
+                    log_return_dicts = []
+
+                # refresh the knn index 
+                if global_step % args.knn_refresh_steps == 0:
+                    logger.info('Refreshing kNN index...')
+                    self.train_knn_index.refresh_index()
                     logger.info('Done.')
-                    batch = (next_batch, negs)
-                except StopIteration:
-                    batch = None
 
-            synchronize()
-            logger.info('Broadcasting batch...')
-            batch = broadcast(batch, src=0)
-            if batch is None:
-                break
-            logger.info('Done')
+                # save the model
+                if global_step % args.save_steps == 0:
+                    if get_rank() == 0:
+                        for st in self.sub_trainers.values():
+                            st.save_model(global_step)
+                synchronize()
 
-            self.train_step(batch)
+            logger.info('********** [END] epoch: {} **********'.format(epoch))
+
+            # run full evaluation at the end of each epoch
+            if args.evaluate_during_training:
+                # TODO: add full evaluation
+                pass
 
     def evaluate(self, split):
         pass
