@@ -89,10 +89,10 @@ class Trainer(ABC):
         if args.do_train:
             # create training dataloader
             self.create_train_dataloader()
+            self.create_train_eval_dataloader()
 
             if args.evaluate_during_training:
-                self.create_train_eval_dataloader()
-                #self.create_val_dataloader()
+                self.create_val_dataloader()
 
             # set optimizers and schedulers
             self.set_optimizers_and_schedulers()

@@ -2,6 +2,7 @@ import os
 import pickle
 import logging
 import faiss
+import math
 import numpy as np
 import numpy.ma as ma
 from tqdm import tqdm
@@ -66,25 +67,40 @@ class NearestNeighborIndex(object):
 
         return restricted_knn
 
-    def get_knn_negatives(self, query_clusters):
+    def get_knn_limited_index(self,
+                              query_idxs,
+                              include_index_idxs=None,
+                              exclude_index_idxs=None):
         """ Consider only out of cluster points when awnsering the query. """
         assert get_rank() == 0
-        in_query_mask = np.isin(self.idxs, query_clusters.data)
-        assert np.sum(in_query_mask) == query_clusters.data.size
-        out_query_mask = ~in_query_mask
+        assert (include_index_idxs is None) ^ (exclude_index_idxs is None)
+
+        query_mask = np.isin(self.idxs, query_idxs)
+        assert np.sum(query_mask) == len(query_idxs)
+
+        if include_index_idxs is not None:
+            index_mask = np.isin(self.idxs, include_index_idxs, invert=False)
+        else:
+            index_mask = np.isin(self.idxs, exclude_index_idxs, invert=True)
 
         # get in-query and out-query representations
-        in_query_X = self.X[in_query_mask]
-        out_query_X = self.X[out_query_mask]
+        query_X = self.X[query_mask]
+        index_X = self.X[index_mask]
 
-        # get out-query idxs
-        out_query_idxs = self.idxs[out_query_mask]
+        # get index idxs
+        index_idxs = self.idxs[index_mask]
 
-        # compute out-query closest
-        _, I = self._build_and_query_knn(out_query_X, in_query_X, self.args.k)
+        # compute limited index closest
+        _, I = self._build_and_query_knn(
+                index_X,
+                query_X,
+                self.args.k,
+                n_cells=1,
+                n_probe=1
+        )
 
-        remap = lambda i : out_query_idxs[i]
-        v_remap = np.vectorize(remap)
+        # remap indices back to idxs
+        v_remap = np.vectorize(lambda i : index_idxs[i])
         I = v_remap(I)
         return I
 
@@ -94,20 +110,20 @@ class NearestNeighborIndex(object):
         #   - `self.X` : stacked embedding np array with shape: (N, D)
         #   - `self.idxs` : a np array of dataset idxs with shape: (N,)
 
-        # FIXME: only for testing
-        tmp_fname = 'knn_index.pkl'
-        if os.path.exists(tmp_fname):
-            if get_rank() == 0:
-                logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
-                with open(tmp_fname, 'rb') as f:
-                    self.idxs, self.X = pickle.load(f)
-        else:
-            self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
-            if get_rank() == 0:
-                with open(tmp_fname, 'wb') as f:
-                    pickle.dump((self.idxs, self.X), f)
+        ## FIXME: only for testing
+        #tmp_fname = 'knn_index.pkl'
+        #if os.path.exists(tmp_fname):
+        #    if get_rank() == 0:
+        #        logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
+        #        with open(tmp_fname, 'rb') as f:
+        #            self.idxs, self.X = pickle.load(f)
+        #else:
+        #    self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+        #    if get_rank() == 0:
+        #        with open(tmp_fname, 'wb') as f:
+        #            pickle.dump((self.idxs, self.X), f)
 
-        #self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+        self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
 
     def _build_and_query_knn(self,
                              index_mx,

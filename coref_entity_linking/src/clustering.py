@@ -48,14 +48,15 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 anchor = joint_collection['anchor']
                 pos_list = joint_collection['pos']
                 neg_list = joint_collection['neg']
-                pos_len, neg_len = len(pos_list), len(neg_list)
-                if pos_len > neg_len:
-                    pos_list *= math.ceil(pos_len / neg_len)
-                else:
-                    neg_list *= math.ceil(neg_len / pos_len)
-
+                min_len = min(len(pos_list), len(neg_list))
+                if min_len == 0:
+                    continue
+                pos_list = pos_list[:min_len]
+                neg_list = neg_list[:min_len]
                 for p, n in zip(pos_list, neg_list):
                     triplets.append((anchor, p, n))
+
+        # append one big dataset
         dataset_list.append(
                 TripletEmbeddingDataset(
                     args,
@@ -91,33 +92,21 @@ class AllPairsCreator(PairsCreator):
     def __call__(self, clusters_mx, sparse_graph):
         # FIXME: this is kinda slow, maybe fix with Cython??
         # check to make sure this is true
-        assert np.all(np.isin(sparse_graph.row, clusters_mx.data))
+        _row = clusters_mx.row
+        _data = clusters_mx.data
+        assert np.all(np.isin(sparse_graph.row, _data))
 
         # get all of the edges
-        all_edges = np.vstack((sparse_graph.row, sparse_graph.col)).T.tolist()
+        all_edges = np.vstack((sparse_graph.row, sparse_graph.col))
 
-        # get the positive edges
-        _row = clusters_mx.row
-        local_pos_a, local_pos_b = np.where(
-                np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
-        )
-        a = clusters_mx.data[local_pos_a]
-        b = clusters_mx.data[local_pos_b]
-        pos_edges = np.vstack((np.concatenate((a, b), axis=0),
-                               np.concatenate((b, a), axis=0))).T.tolist()
-
-        # get negative edges
-        neg_edge_mask = [e not in pos_edges for e in all_edges]
-        neg_edge_mask = np.asarray(neg_edge_mask)
-        pos_edges = np.asarray(pos_edges)
-        all_edges = np.asarray(all_edges)
-        neg_edges = all_edges[neg_edge_mask]
-
-        # randomly filter for speed up
-        mask = np.full(pos_edges.shape[0], False)
-        mask[:(2 * 3 * clusters_mx.data.size)] = True
-        np.random.shuffle(mask)
-        pos_edges = pos_edges[mask]
+        # get the positive and negative edges
+        idx2cluster = {a : b for a, b in zip(_data, _row)}
+        v_idx2cluster = np.vectorize(lambda x : idx2cluster.get(x, -1))
+        all_cluster_assignments = v_idx2cluster(all_edges)
+        pos_mask = (all_cluster_assignments[0] == all_cluster_assignments[1])
+        neg_mask = ~pos_mask
+        pos_edges = all_edges[:, pos_mask].T
+        neg_edges = all_edges[:, neg_mask].T
 
         # organize pairs collection
         pairs_collection = []

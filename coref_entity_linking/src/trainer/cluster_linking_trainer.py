@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 from functools import reduce
 import numpy as np
@@ -118,7 +119,23 @@ class ClusterLinkingTrainer(Trainer):
                 args, self.train_eval_dataset)
 
     def create_val_dataloader(self):
-        pass
+        args = self.args
+
+        # load and cache examples and get the metadata for the dataset
+        self.load_and_cache_examples(split='val', evaluate=True)
+
+        if args.available_entities in ['candidates_only', 'knn_candidates']:
+            examples = flatten([[k] + v
+                    for k, v in self.val_metadata.midx2cand.items()])
+        elif args.available_entities == 'open_domain':
+            examples = list(self.val_metadata.idx2uid.keys())
+        else:
+            raise ValueError('Invalid available_entities')
+        examples = unique(examples)
+        self.val_dataset = InferenceEmbeddingDataset(
+                args, examples, args.val_cache_dir)
+        self.val_dataloader = InferenceEmbeddingDataLoader(
+                args, self.val_dataset)
 
     def create_test_dataloader(self):
         pass
@@ -170,8 +187,65 @@ class ClusterLinkingTrainer(Trainer):
 
         return return_dict
 
+    def _neg_choosing_prep(self):
+        args = self.args
+        metadata = self.train_metadata
+
+        # be able to map from midx to doc and back
+        self.doc2midxs = defaultdict(list)
+        self.midx2doc = {}
+        for doc_id, wdoc_clusters in metadata.wdoc_clusters.items():
+            mentions = flatten(wdoc_clusters.values())
+            self.doc2midxs[doc_id] = mentions
+            for midx in mentions:
+                self.midx2doc[midx] = doc_id
+
+        # need to know the available entities in this case as well
+        if args.available_entities not in ['candidates_only', 'knn_candidates']:
+            self.avail_entity_idxs = list(range(num_entities))
+
+    def _choose_negs(self, batch):
+        args = self.args
+        negatives_list = []
+        clusters = [batch.getrow(i).data.tolist()
+                        for i in range(batch.shape[0])]
+        for c_idxs in clusters:
+            if args.clustering_domain == 'within_doc':
+                # get mention idxs within document
+                doc_midxs = self.doc2midxs[self.midx2doc[c_idxs[0]]]
+
+                # produce available negative idxs
+                neg_midxs = [m for m in doc_midxs if m not in c_idxs]
+                if args.available_entities in ['candidates_only', 'knn_candidates']:
+                    neg_eidxs = flatten([self.train_metadata.midx2cand.get(m, [])
+                                    for m in doc_midxs])
+                    neg_eidxs = [x for x in neg_eidxs if x not in c_idxs]
+                    avail_neg_idxs = neg_eidxs + neg_midxs
+                else:
+                    avail_neg_idxs = self.avail_entity_idxs + neg_midxs
+
+                # produce knn negatives for cluster and append to list
+                negatives_list.append(
+                    self.train_knn_index.get_knn_limited_index(
+                            c_idxs, include_index_idxs=avail_neg_idxs
+                    )
+                )
+            else:
+                # produce knn negatives for cluster and append to list
+                negatives_list.append(
+                    self.train_knn_index.get_knn_limited_index(
+                            c_idxs, exclude_index_idxs=c_idxs
+                    )
+                )
+        negs = np.concatenate(negatives_list, axis=0)
+        return negs
+
     def train(self):
         args = self.args
+
+        # set up data structures for choosing available negatives on-the-fly
+        if args.clustering_domain == 'within_doc':
+            self._neg_choosing_prep()
 
         global_step = 0
         log_return_dicts = []
@@ -196,7 +270,7 @@ class ClusterLinkingTrainer(Trainer):
                 if get_rank() == 0:
                     try:
                         next_batch = next(data_iterator)
-                        negs = self.train_knn_index.get_knn_negatives(next_batch)
+                        negs = self._choose_negs(next_batch)
                         batch = (next_batch, negs)
                     except StopIteration:
                         batch = None
@@ -237,7 +311,10 @@ class ClusterLinkingTrainer(Trainer):
             # run full evaluation at the end of each epoch
             if args.evaluate_during_training:
                 # TODO: add full evaluation
-                pass
+                if get_rank() == 0:
+                    embed()
+                synchronize()
+                exit()
 
     def evaluate(self, split):
         pass
