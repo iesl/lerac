@@ -341,8 +341,8 @@ class ClusterLinkingTrainer(Trainer):
             knn_index = self.test_knn_index
 
         if args.clustering_domain == 'within_doc':
-            eval_wdoc(metadata, knn_index, sub_trainer)
+            eval_wdoc(args, metadata, knn_index, sub_trainer)
         else:
-            eval_xdoc(metadata, knn_index, sub_trainer)
+            eval_xdoc(args, metadata, knn_index, sub_trainer)
 
         logger.info('********** [END] eval: {} **********'.format(split))
