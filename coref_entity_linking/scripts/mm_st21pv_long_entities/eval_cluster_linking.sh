@@ -40,8 +40,7 @@ python -m torch.distributed.launch \
         --clustering_domain 'within_doc' \
         --available_entities 'candidates_only' \
         --k 16 \
-        --max_in_cluster_dist 0.1 \
-        --margin 0.5 \
+        --eval_coref_threshold 0.8407845258712767 \
         --per_gpu_infer_batch 256 \
         --evaluate_during_training \
         --logging_steps 25 \

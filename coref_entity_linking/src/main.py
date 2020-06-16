@@ -162,6 +162,8 @@ def get_args():
                         choices = ['triplet', 'sigmoid', 'softmax', 'accum_max_margin'],
                         type=str,
                         help="method of training on pairs")
+    parser.add_argument("--eval_coref_threshold", default=None, type=float,
+                        help="For clustering loss")
 
     parser.add_argument("--num_clusters_per_macro_batch", default=8, type=int,
                         help="num clusters to consider in outer-loop batch")
