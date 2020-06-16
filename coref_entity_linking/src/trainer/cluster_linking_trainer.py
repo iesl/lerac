@@ -2,24 +2,26 @@ from collections import defaultdict
 import logging
 from functools import reduce
 import numpy as np
+from scipy.sparse import coo_matrix
 from torch.utils.data import DataLoader, SequentialSampler
 from tqdm import tqdm, trange
 
+from clustering import (TripletDatasetBuilder,
+                        SigmoidDatasetBuilder,
+                        SoftmaxDatasetBuilder,
+                        AccumMaxMarginDatasetBuilder)
+from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
+from data.dataloaders import (MetaClusterDataLoader,
+                              InferenceEmbeddingDataLoader)
+from evaluation import eval_wdoc, eval_xdoc
+from model import MirrorEmbeddingModel
+from trainer.trainer import Trainer
+from trainer.emb_sub_trainer import EmbeddingSubTrainer
 from utils.comm import (all_gather,
                         broadcast,
                         get_world_size,
                         get_rank,
                         synchronize)
-from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
-from data.dataloaders import (MetaClusterDataLoader,
-                              InferenceEmbeddingDataLoader)
-from model import MirrorEmbeddingModel
-from clustering import (TripletDatasetBuilder,
-                        SigmoidDatasetBuilder,
-                        SoftmaxDatasetBuilder,
-                        AccumMaxMarginDatasetBuilder)
-from trainer.trainer import Trainer
-from trainer.emb_sub_trainer import EmbeddingSubTrainer
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
 from utils.misc import flatten, unique, dict_merge_with
 
@@ -72,10 +74,15 @@ class ClusterLinkingTrainer(Trainer):
         args = self.args
         self.sub_trainers = {}
         for name, model in self.models.items():
-            optimizer = self.optimizers[name]
-            scheduler = self.schedulers[name]
+            optimizer = self.optimizers[name] if args.do_train else None
+            scheduler = self.schedulers[name] if args.do_train else None
             if isinstance(model.module, MirrorEmbeddingModel):
-                self.sub_trainers[name] = EmbeddingSubTrainer(args, model, optimizer, scheduler)
+                self.sub_trainers[name] = EmbeddingSubTrainer(
+                        args,
+                        model,
+                        optimizer,
+                        scheduler
+                )
             else:
                 raise ValueError('module not supported by a sub trainer')
     
@@ -316,5 +323,26 @@ class ClusterLinkingTrainer(Trainer):
                 synchronize()
                 exit()
 
-    def evaluate(self, split):
-        pass
+    def evaluate(self, split=''):
+        assert split in ['train', 'val', 'test']
+        args = self.args
+
+        logger.info('********** [START] eval: {} **********'.format(split))
+
+        sub_trainer = self.sub_trainers['embedding_model']
+        if split == 'train':
+            metadata = self.train_metadata
+            knn_index = self.train_knn_index
+        elif split == 'val':
+            metadata = self.val_metadata
+            knn_index = self.val_knn_index
+        else:
+            metadata = self.test_metadata
+            knn_index = self.test_knn_index
+
+        if args.clustering_domain == 'within_doc':
+            eval_wdoc(metadata, knn_index, sub_trainer)
+        else:
+            eval_xdoc(metadata, knn_index, sub_trainer)
+
+        logger.info('********** [END] eval: {} **********'.format(split))

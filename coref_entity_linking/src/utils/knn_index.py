@@ -70,20 +70,22 @@ class NearestNeighborIndex(object):
     def get_knn_limited_index(self,
                               query_idxs,
                               include_index_idxs=None,
-                              exclude_index_idxs=None):
+                              exclude_index_idxs=None,
+                              k=None):
         """ Consider only out of cluster points when awnsering the query. """
         assert get_rank() == 0
         assert (include_index_idxs is None) ^ (exclude_index_idxs is None)
+        k = self.args.k if k is None else k
 
+        # build the masks
         query_mask = np.isin(self.idxs, query_idxs)
         assert np.sum(query_mask) == len(query_idxs)
-
         if include_index_idxs is not None:
             index_mask = np.isin(self.idxs, include_index_idxs, invert=False)
         else:
             index_mask = np.isin(self.idxs, exclude_index_idxs, invert=True)
 
-        # get in-query and out-query representations
+        # get query and index representations
         query_X = self.X[query_mask]
         index_X = self.X[index_mask]
 
@@ -94,7 +96,7 @@ class NearestNeighborIndex(object):
         _, I = self._build_and_query_knn(
                 index_X,
                 query_X,
-                self.args.k,
+                k,
                 n_cells=1,
                 n_probe=1
         )
@@ -110,20 +112,20 @@ class NearestNeighborIndex(object):
         #   - `self.X` : stacked embedding np array with shape: (N, D)
         #   - `self.idxs` : a np array of dataset idxs with shape: (N,)
 
-        ## FIXME: only for testing
-        #tmp_fname = 'knn_index.pkl'
-        #if os.path.exists(tmp_fname):
-        #    if get_rank() == 0:
-        #        logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
-        #        with open(tmp_fname, 'rb') as f:
-        #            self.idxs, self.X = pickle.load(f)
-        #else:
-        #    self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
-        #    if get_rank() == 0:
-        #        with open(tmp_fname, 'wb') as f:
-        #            pickle.dump((self.idxs, self.X), f)
+        # FIXME: only for testing
+        tmp_fname = 'knn_index.pkl'
+        if os.path.exists(tmp_fname):
+            if get_rank() == 0:
+                logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
+                with open(tmp_fname, 'rb') as f:
+                    self.idxs, self.X = pickle.load(f)
+        else:
+            self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+            if get_rank() == 0:
+                with open(tmp_fname, 'wb') as f:
+                    pickle.dump((self.idxs, self.X), f)
 
-        self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+        #self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
 
     def _build_and_query_knn(self,
                              index_mx,
@@ -134,13 +136,16 @@ class NearestNeighborIndex(object):
         # Can change `n_cells`, `n_probe` as hyperparameters for knn search
         assert index_mx.shape[1] == query_mx.shape[1]
         d = index_mx.shape[1]
-        quantizer = faiss.IndexFlat(d, faiss.METRIC_INNER_PRODUCT)
-        knn_index = faiss.IndexIVFFlat(
-                quantizer, d, n_cells, faiss.METRIC_INNER_PRODUCT
-        )
-        knn_index.train(index_mx)
+        if n_cells == 1:
+            knn_index = faiss.IndexFlat(d, faiss.METRIC_INNER_PRODUCT)
+        else:
+            quantizer = faiss.IndexFlat(d, faiss.METRIC_INNER_PRODUCT)
+            knn_index = faiss.IndexIVFFlat(
+                    quantizer, d, n_cells, faiss.METRIC_INNER_PRODUCT
+            )
+            knn_index.train(index_mx)
+            knn_index.nprobe = n_probe
         knn_index.add(index_mx)
-        knn_index.nprobe = n_probe
         D, I = knn_index.search(query_mx, k)
         return D, I
 

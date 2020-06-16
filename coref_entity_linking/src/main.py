@@ -262,11 +262,6 @@ def main():
         trainer.evaluate(split='train', threshold=0.0)
     elif args.do_val:
         trainer.evaluate(split='val')
-        #trainer.evaluate(split='val', threshold=0.1728174449646312)
-        #trainer.evaluate(split='val',
-        #                 threshold=0.2514077,
-        #                 save_dir=os.path.join(args.output_dir, 'graphviz_val'),
-        #                 dump_plots=True)
     elif args.do_test:
         trainer.evaluate(split='test', threshold=0.0)
 

@@ -116,11 +116,6 @@ class AllPairsCreator(PairsCreator):
             for anchor in anchors:
                 pos = pos_edges[:, 1][pos_edges[:, 0] == anchor].tolist()
                 neg = neg_edges[:, 1][neg_edges[:, 0] == anchor].tolist()
-                min_len = min(len(pos), len(neg))
-                if min_len == 0:
-                    continue
-                pos = pos[:min_len]
-                neg = neg[:min_len]
                 cluster_pairs_collection.append(
                     {
                         'anchor' : anchor,
