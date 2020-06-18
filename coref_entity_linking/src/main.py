@@ -261,11 +261,11 @@ def main():
     if args.do_train:
         trainer.train()
     elif args.do_train_eval:
-        trainer.evaluate(split='train', threshold=0.0)
+        trainer.evaluate(split='train')
     elif args.do_val:
         trainer.evaluate(split='val')
     elif args.do_test:
-        trainer.evaluate(split='test', threshold=0.0)
+        trainer.evaluate(split='test')
 
 
 if __name__ == "__main__":

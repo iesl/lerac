@@ -13,7 +13,7 @@ from clustering import (TripletDatasetBuilder,
 from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
-from evaluation import eval_wdoc, eval_xdoc
+from evaluation.evaluation import eval_wdoc, eval_xdoc
 from model import MirrorEmbeddingModel
 from trainer.trainer import Trainer
 from trainer.emb_sub_trainer import EmbeddingSubTrainer
