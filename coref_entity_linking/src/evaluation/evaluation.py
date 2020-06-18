@@ -56,14 +56,24 @@ def eval_wdoc(args, metadata, knn_index, sub_trainer):
         coref_graphs.append(coref_graph)
         linking_graphs.append(linking_graph)
 
+    logger.info('Computing coref metrics...')
     coref_metrics = compute_coref_metrics(
             per_doc_coref_clusters, coref_graphs, args.eval_coref_threshold
     )
+    logger.info('Done.')
+
+    logger.info('Computing linking metrics...')
     linking_metrics, slim_linking_graph = compute_linking_metrics(
             metadata, linking_graphs
     )
+    logger.info('Done.')
+    
+    logger.info('Computing joint metrics...')
+    slim_coref_graph = _get_global_maximum_spanning_tree(coref_graphs)
     joint_metrics = compute_joint_metrics(metadata,
-                                          coref_graphs + [slim_linking_graph])
+                                          [slim_linking_graph, slim_linking_graph])
+    logger.info('Done.')
+
     synchronize()
     return
 
@@ -164,60 +174,38 @@ def compute_linking_metrics(metadata, linking_graphs):
 
 def compute_joint_metrics(metadata, joint_graphs):
     # get global joint graph
-    #global_joint_graph = _merge_sparse_graphs(joint_graphs)
-    global_joint_graph = _get_global_maximum_spanning_tree(joint_graphs)
+    global_joint_graph = _merge_sparse_graphs(joint_graphs)
+    #global_joint_graph = _get_global_maximum_spanning_tree(joint_graphs)
 
-    # which edges from the joint graph should we keep
-    edge_keep_mask = np.full(global_joint_graph.data.shape, True)
+    # reorder the data for the requirements of the `special_partition` function
+    _row = global_joint_graph.row
+    _col = global_joint_graph.col
+    _data = global_joint_graph.data
+    tuples = zip(_row, _col, _data)
+    tuples = sorted(tuples, key=lambda x : (x[1], -x[0])) # sorted this way for nice DFS
+    special_row, special_col, special_data = zip(*tuples)
+    special_row = np.asarray(special_row, dtype=np.int)
+    special_col = np.asarray(special_col, dtype=np.int)
+    special_data = np.asarray(special_data)
 
     # order the edges in ascending order according to affinities
-    ordered_edge_indices = np.argsort(global_joint_graph.data)
+    ordered_edge_indices = np.argsort(special_data)
 
-    # figure out which edges we should drop in ascending order
-    for i in tqdm(ordered_edge_indices):
-        # get end points of edge in consideration
-        node_a = global_joint_graph.row[i]
-        node_b = global_joint_graph.col[i]
+    # get the mask of edges we want to keep
+    keep_edge_mask = special_partition(
+            special_row,
+            special_col,
+            ordered_edge_indices,
+            metadata.num_entities
+    )
 
-        # try dropping the edge and see what happens
-        edge_keep_mask[i] = False
+    # rebuild the graph in the correct order
+    partitioned_joint_graph = coo_matrix(
+            (special_data[keep_edge_mask],
+             (special_row[keep_edge_mask], special_col[keep_edge_mask])),
+            shape=global_joint_graph.shape
+    )
 
-        # check if entities on both sides
-        has_entity_a = False
-        has_entity_b = False
-
-        # build current joint graph given `edge_keep_mask`
-        tmp_joint_graph = csc_matrix(
-                    (np.ones((np.sum(edge_keep_mask),)),
-                     (global_joint_graph.row[edge_keep_mask],
-                      global_joint_graph.col[edge_keep_mask])),
-                    shape=global_joint_graph.shape
-        )
-
-        # see if something simple will tell us if we can delete this edge
-        if (node_a < metadata.num_entities
-            or np.any(tmp_joint_graph.getcol(node_a).indices < metadata.num_entities)):
-            has_entity_a = True
-        if np.any(tmp_joint_graph.getcol(node_b).indices < metadata.num_entities):
-            has_entity_b = True
-
-        if has_entity_a and has_entity_b:
-            continue
-
-        # if not do something more complicated, but only for the sides that we need
-        if not has_entity_a:
-            bfs_a = breadth_first_tree(tmp_joint_graph, node_a, directed=False).tocoo()
-            has_entity_a = (np.any(bfs_a.row < metadata.num_entities)
-                            or np.any(bfs_a.col < metadata.num_entities))
-        if not has_entity_b:
-            bfs_b = breadth_first_tree(tmp_joint_graph, node_b, directed=False).tocoo()
-            has_entity_b = (np.any(bfs_b.row < metadata.num_entities)
-                            or np.any(bfs_b.col < metadata.num_entities))
-
-        # keep the edge if we have to
-        if not (has_entity_a and has_entity_b):
-            edge_keep_mask[i] = True
-            
     embed()
     return
 
@@ -256,7 +244,7 @@ def build_sparse_affinity_graph(args,
             # add mention-mention edges to 
             coref_graph_edges.extend(
                 [tuple(sorted((a, b)))
-                    for a, l in zip(midxs, mention_knn) for b in l]
+                    for a, l in zip(midxs, mention_knn) for b in l if a != b]
             )
             coref_graph_edges = unique(coref_graph_edges)
             affinities = [np.dot(embeds[inverse_idxs[i]],
