@@ -16,18 +16,17 @@ ctypedef np.npy_bool BOOL_t
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def _build_col_wise_adj_index(np.ndarray[INT_t, ndim=1] col,
-                              INT_t col_max_value,
-                              INT_t num_entities):
+                              INT_t col_max_value):
     # requires: sorted col ascending order
-    cdef INT_t index_size = col_max_value - num_entities + 1
+    cdef INT_t index_size = col_max_value + 1
     cdef np.ndarray[INT_t, ndim=2] col_wise_adj_index = np.zeros([index_size, 2], dtype=INT)
-    cdef INT_t adjusted_c
+    cdef INT_t adjusted_index
+    cdef INT_t i = 0, c
 
-    cdef INT_t curr_col = col[0] - num_entities
+    cdef INT_t curr_col = col[0]
     for i, c in enumerate(col):
-        adjusted_c = c - num_entities
-        if adjusted_c != curr_col:
-            curr_col = adjusted_c
+        if c != curr_col:
+            curr_col = c
             col_wise_adj_index[curr_col, 0] = i
             col_wise_adj_index[curr_col, 1] = i+1
         else:
@@ -63,7 +62,6 @@ def _has_entity_in_component(list stack,
         visited.add(curr_node)
 
         # get neighbors of `curr_node` and push them onto the stack
-        curr_node -= num_entities
         start_index = col_wise_adj_index[curr_node, 0]
         end_index = col_wise_adj_index[curr_node, 1]
         stack.extend(row[start_index:end_index].tolist())
@@ -76,9 +74,11 @@ def _has_entity_in_component(list stack,
 def special_partition(np.ndarray[INT_t, ndim=1] row, 
                       np.ndarray[INT_t, ndim=1] col,
                       np.ndarray[INT_t, ndim=1] ordered_indices,
+                      np.ndarray[INT_t, ndim=1] siamese_indices,
                       INT_t num_entities):
     assert row.shape[0] == col.shape[0]
     assert row.shape[0] == ordered_indices.shape[0]
+    assert row.shape[0] == siamese_indices.shape[0]
 
     cdef INT_t num_edges = row.shape[0]
     cdef np.ndarray[BOOL_t, ndim=1] keep_mask = np.ones([num_edges,], dtype=BOOL)
@@ -89,40 +89,47 @@ def special_partition(np.ndarray[INT_t, ndim=1] row,
 
     # has shape [N, 2]; [:,0] are starting indices and [:,1] are (exclusive) ending indices
     cdef np.ndarray[INT_t, ndim=2] col_wise_adj_index
-    cdef INT_t adjusted_c
+    cdef INT_t adjusted_index
     col_wise_adj_index = _build_col_wise_adj_index(
-            col, col_max_value, num_entities
+            col, col_max_value
     )
 
-    for i in tqdm(ordered_indices, desc='dropping joint edges'):
+    for i in tqdm(ordered_indices, desc='Paritioning Joint Graph'):
         r = row[i]
         c = col[i]
+
+        # we've already deleted this edge so we can move on
+        if keep_mask[i] == False:
+            continue
+
+        # try removing both the forward and backward edges
         keep_mask[i] = False
+        keep_mask[siamese_indices[i]] = False
+
+        # update the adj list index for the forward and backward edges
+        col_wise_adj_index[c:, :] -= 1
+        col_wise_adj_index[c, 0] += 1
+        col_wise_adj_index[r:, :] -= 1
+        col_wise_adj_index[r, 0] += 1
 
         # create the temporary graph we want to check
         tmp_row = row[keep_mask]
-        tmp_col = col[keep_mask]
-
-        # update the adj list index
-        adjusted_c = c - num_entities
-        col_wise_adj_index[adjusted_c, 1] -= 1
-        if adjusted_c + 1 < col_wise_adj_index.shape[0]:
-            col_wise_adj_index[adjusted_c + 1, :] -= 1
 
         # check if we can remove the edge (r, c) 
         has_entity_r = _has_entity_in_component(
-                [r], row, col_wise_adj_index, num_entities
+                [r], tmp_row, col_wise_adj_index, num_entities
         )
         has_entity_c = _has_entity_in_component(
-                [c], row, col_wise_adj_index, num_entities
+                [c], tmp_row, col_wise_adj_index, num_entities
         )
 
         # add the edge back if we need it
         if not(has_entity_r and has_entity_c):
             keep_mask[i] = True
-            adjusted_c = c - num_entities
-            col_wise_adj_index[adjusted_c, 1] += 1
-            if adjusted_c + 1 < col_wise_adj_index.shape[0]:
-                col_wise_adj_index[adjusted_c + 1, :] += 1
+            keep_mask[siamese_indices[i]] = True
+            col_wise_adj_index[c:, :] += 1
+            col_wise_adj_index[c, 0] -= 1
+            col_wise_adj_index[r:, :] += 1
+            col_wise_adj_index[r, 0] -= 1
 
     return keep_mask

@@ -112,20 +112,20 @@ class NearestNeighborIndex(object):
         #   - `self.X` : stacked embedding np array with shape: (N, D)
         #   - `self.idxs` : a np array of dataset idxs with shape: (N,)
 
-        # FIXME: only for testing
-        tmp_fname = 'knn_index.pkl'
-        if os.path.exists(tmp_fname):
-            if get_rank() == 0:
-                logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
-                with open(tmp_fname, 'rb') as f:
-                    self.idxs, self.X = pickle.load(f)
-        else:
-            self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
-            if get_rank() == 0:
-                with open(tmp_fname, 'wb') as f:
-                    pickle.dump((self.idxs, self.X), f)
+        ## FIXME: only for testing
+        #tmp_fname = 'knn_index.pkl'
+        #if os.path.exists(tmp_fname):
+        #    if get_rank() == 0:
+        #        logger.warn('!!!! LOADING PREVIOUSLY CACHED kNN INDEX !!!!')
+        #        with open(tmp_fname, 'rb') as f:
+        #            self.idxs, self.X = pickle.load(f)
+        #else:
+        #    self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+        #    if get_rank() == 0:
+        #        with open(tmp_fname, 'wb') as f:
+        #            pickle.dump((self.idxs, self.X), f)
 
-        #self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
+        self.idxs, self.X = self.sub_trainer.get_embeddings(self.dataloader)
 
     def _build_and_query_knn(self,
                              index_mx,

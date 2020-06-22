@@ -317,11 +317,18 @@ class ClusterLinkingTrainer(Trainer):
 
             # run full evaluation at the end of each epoch
             if args.evaluate_during_training:
-                # TODO: add full evaluation
-                if get_rank() == 0:
-                    embed()
-                synchronize()
-                exit()
+                if args.do_train_eval:
+                    train_eval_metrics = self.evaluate(split='train')
+                if args.do_val:
+                    val_metrics = self.evaluate(split='val')
+
+
+
+        logger.info('Training complete')
+        if get_rank() == 0:
+            embed()
+        synchronize()
+        exit()
 
     def evaluate(self, split=''):
         assert split in ['train', 'val', 'test']
@@ -340,9 +347,13 @@ class ClusterLinkingTrainer(Trainer):
             metadata = self.test_metadata
             knn_index = self.test_knn_index
 
-        if args.clustering_domain == 'within_doc':
-            eval_wdoc(args, metadata, knn_index, sub_trainer)
-        else:
-            eval_xdoc(args, metadata, knn_index, sub_trainer)
+        knn_index.refresh_index()
 
+        if args.clustering_domain == 'within_doc':
+            metrics = eval_wdoc(args, metadata, knn_index, sub_trainer)
+        else:
+            metrics = eval_xdoc(args, metadata, knn_index, sub_trainer)
+
+        logger.info(metrics)
         logger.info('********** [END] eval: {} **********'.format(split))
+        return metrics

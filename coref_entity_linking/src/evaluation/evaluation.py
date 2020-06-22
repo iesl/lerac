@@ -71,11 +71,20 @@ def eval_wdoc(args, metadata, knn_index, sub_trainer):
     logger.info('Computing joint metrics...')
     slim_coref_graph = _get_global_maximum_spanning_tree(coref_graphs)
     joint_metrics = compute_joint_metrics(metadata,
-                                          [slim_linking_graph, slim_linking_graph])
+                                          [slim_coref_graph, slim_linking_graph])
     logger.info('Done.')
 
+    metrics = {
+        'coref_fmi' : coref_metrics['fmi'],
+        'coref_rand_index' : coref_metrics['rand_index'],
+        'coref_threshold' : coref_metrics['threshold'],
+        'vanilla_recall' : linking_metrics['vanilla_recall'],
+        'vanilla_accuracy' : linking_metrics['vanilla_accuracy'],
+        'joint_accuracy' : joint_metrics['joint_accuracy']
+    }
+
     synchronize()
-    return
+    return metrics
 
 
 def eval_xdoc(args, metadata, knn_index, sub_trainer):
@@ -148,13 +157,15 @@ def compute_linking_metrics(metadata, linking_graphs):
     all_entity_choices = global_graph.argmax(axis=0)
     all_entity_choices = np.asarray(all_entity_choices).reshape(-1,)
     all_idxs = np.arange(all_entity_choices.size)
-    # FIXME: this isn't completely correct if someone has no candidates
+
     mention_idx_mask = np.isin(all_idxs, list(mention2cand.keys()))
     pred_eidxs = all_entity_choices[mention_idx_mask]
     midxs = all_idxs[mention_idx_mask]
 
     # build slim global linking graph for joint linking inference
-    max_affinities = global_graph.max(axis=0).data
+    global_graph = global_graph.tocsc()
+    v_max = np.vectorize(lambda x : global_graph.getcol(x).max())
+    max_affinities = v_max(midxs)
     slim_global_graph = coo_matrix((max_affinities, (pred_eidxs, midxs)),
                                    shape=global_graph.shape)
 
@@ -175,12 +186,11 @@ def compute_linking_metrics(metadata, linking_graphs):
 def compute_joint_metrics(metadata, joint_graphs):
     # get global joint graph
     global_joint_graph = _merge_sparse_graphs(joint_graphs)
-    #global_joint_graph = _get_global_maximum_spanning_tree(joint_graphs)
 
     # reorder the data for the requirements of the `special_partition` function
-    _row = global_joint_graph.row
-    _col = global_joint_graph.col
-    _data = global_joint_graph.data
+    _row = np.concatenate((global_joint_graph.row, global_joint_graph.col))
+    _col = np.concatenate((global_joint_graph.col, global_joint_graph.row))
+    _data = np.concatenate((global_joint_graph.data, global_joint_graph.data))
     tuples = zip(_row, _col, _data)
     tuples = sorted(tuples, key=lambda x : (x[1], -x[0])) # sorted this way for nice DFS
     special_row, special_col, special_data = zip(*tuples)
@@ -188,26 +198,61 @@ def compute_joint_metrics(metadata, joint_graphs):
     special_col = np.asarray(special_col, dtype=np.int)
     special_data = np.asarray(special_data)
 
+    # create siamese indices for easy lookups during partitioning
+    edge_indices = {e : i for i, e in enumerate(zip(special_row, special_col))}
+    siamese_indices = [edge_indices[(c, r)]
+                            for r, c in zip(special_row, special_col)]
+    siamese_indices = np.asarray(siamese_indices)
+
     # order the edges in ascending order according to affinities
     ordered_edge_indices = np.argsort(special_data)
 
-    # get the mask of edges we want to keep
+    # partition the graph using the `keep_edge_mask`
     keep_edge_mask = special_partition(
             special_row,
             special_col,
             ordered_edge_indices,
+            siamese_indices,
             metadata.num_entities
     )
 
-    # rebuild the graph in the correct order
+    # build the partitioned graph
     partitioned_joint_graph = coo_matrix(
             (special_data[keep_edge_mask],
              (special_row[keep_edge_mask], special_col[keep_edge_mask])),
             shape=global_joint_graph.shape
     )
 
-    embed()
-    return
+    # infer the linking decisions from clusters (connected compoents) of
+    # the partitioned joint mention and entity graph 
+    _, labels = connected_components(
+            csgraph=partitioned_joint_graph,
+            directed=False,
+            return_labels=True
+    )
+    unique_labels, cc_sizes = np.unique(labels, return_counts=True)
+    components = defaultdict(list)
+    filtered_labels = unique_labels[cc_sizes > 1]
+    for idx, cc_label in enumerate(labels):
+        if cc_label in filtered_labels:
+            components[cc_label].append(idx)
+    pred_midx2eidx = {}
+    for cluster_nodes in components.values():
+        eidxs = [x for x in cluster_nodes if x < metadata.num_entities]
+        midxs = [x for x in cluster_nodes if x >= metadata.num_entities]
+        assert len(eidxs) == 1
+        assert len(midxs) >= 1
+        eidx = eidxs[0]
+        for midx in midxs:
+            pred_midx2eidx[midx] = eidx
+
+    joint_hits, joint_total = 0, 0
+    for midx, true_eidx in metadata.midx2eidx.items():
+        if pred_midx2eidx[midx] == true_eidx:
+            joint_hits += 1
+        joint_total += 1
+
+    return {'joint_accuracy' : joint_hits / joint_total}
 
 
 def build_sparse_affinity_graph(args,

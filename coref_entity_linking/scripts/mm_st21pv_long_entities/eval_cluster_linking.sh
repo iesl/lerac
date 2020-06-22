@@ -29,9 +29,9 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir data/${DATASET}/ \
         --model_type bert \
-        --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/checkpoint-3600/ \
+        --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp0/checkpoint-3600/ \
         --task_name cluster_linking \
-        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/checkpoint-3600/ \
+        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp0/checkpoint-3600/ \
         --log_dir ${BASE_DIR}/logs/ \
         --do_val \
         --max_seq_length 128 \
