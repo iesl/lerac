@@ -14,9 +14,10 @@ from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
 from evaluation.evaluation import eval_wdoc, eval_xdoc
-from model import MirrorEmbeddingModel
+from model import MirrorEmbeddingModel, VersatileModel
 from trainer.trainer import Trainer
 from trainer.emb_sub_trainer import EmbeddingSubTrainer
+from trainer.concat_sub_trainer import ConcatenationSubTrainer
 from utils.comm import (all_gather,
                         broadcast,
                         get_world_size,
@@ -62,22 +63,27 @@ class ClusterLinkingTrainer(Trainer):
         logger.info('Creating models.')
         args = self.args
         self.models = {
-                'embedding_model': MirrorEmbeddingModel(
+                'affinity_model': VersatileModel(
                     args,
-                    name='embedding_model'
+                    name='affinity_model'
                 )
         }
-        args.tokenizer = self.models['embedding_model'].tokenizer
+        args.tokenizer = self.models['affinity_model'].tokenizer
 
     def create_sub_trainers(self):
         logger.info('Creating sub-trainers.')
         args = self.args
-        self.sub_trainers = {}
         for name, model in self.models.items():
             optimizer = self.optimizers[name] if args.do_train else None
             scheduler = self.schedulers[name] if args.do_train else None
-            if isinstance(model.module, MirrorEmbeddingModel):
-                self.sub_trainers[name] = EmbeddingSubTrainer(
+            if isinstance(model.module, VersatileModel):
+                self.embed_sub_trainer = EmbeddingSubTrainer(
+                        args,
+                        model,
+                        optimizer,
+                        scheduler
+                )
+                self.concat_sub_trainer = ConcatenationSubTrainer(
                         args,
                         model,
                         optimizer,
@@ -156,19 +162,19 @@ class ClusterLinkingTrainer(Trainer):
         if split == 'train':
             self.train_knn_index = NN_Index(
                     args,
-                    self.sub_trainers['embedding_model'],
+                    self.embed_sub_trainer,
                     self.train_eval_dataloader
             )
         elif split == 'val':
             self.val_knn_index = NN_Index(
                     args,
-                    self.sub_trainers['embedding_model'],
+                    self.embed_sub_trainer,
                     self.val_dataloader
             )
         else:
             self.test_knn_index = NN_Index(
                     args,
-                    self.sub_trainers['embedding_model'],
+                    self.embed_sub_trainer,
                     self.test_dataloader
             )
 
@@ -179,18 +185,25 @@ class ClusterLinkingTrainer(Trainer):
         clusters_mx, per_example_negs = batch
 
         # compute scores using up-to-date model
-        sub_trainer = self.sub_trainers['embedding_model']
-        sparse_graph = sub_trainer.compute_scores_for_inference(
+        sparse_graph = self.embed_sub_trainer.compute_scores_for_inference(
                 clusters_mx, per_example_negs)
 
         # create custom datasets for training
-        dataset_list = None
+        embed_dataset_list = None
+        concat_dataset_list = None
         if get_rank() == 0:
-            dataset_list = self.dataset_builder(clusters_mx, sparse_graph)
-        dataset_list = broadcast(dataset_list, src=0)
+            dataset_lists = self.dataset_builder(clusters_mx, sparse_graph)
+            embed_dataset_list, concat_dataset_list = dataset_lists
+        embed_dataset_list = broadcast(embed_dataset_list, src=0)
+        concat_dataset_list = broadcast(concat_dataset_list, src=0)
 
         # train on datasets
-        return_dict = sub_trainer.train_on_subset(dataset_list)
+        embed_return_dict = self.embed_sub_trainer.train_on_subset(embed_dataset_list)
+        concat_return_dict = self.concat_sub_trainer.train_on_subset(concat_dataset_list)
+
+        return_dict = {}
+        return_dict.update(embed_return_dict)
+        return_dict.update(concat_return_dict)
 
         return return_dict
 

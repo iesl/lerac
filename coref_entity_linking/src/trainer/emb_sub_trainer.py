@@ -69,9 +69,10 @@ class EmbeddingSubTrainer(object):
         for batch in batch_iterator:
             batch = tuple(t.to(args.device, non_blocking=True) for t in batch)
             with torch.no_grad():
-                inputs = {'input_ids_a':      batch[1],
-                          'attention_mask_a': batch[2],
-                          'token_type_ids_a': batch[3]}
+                inputs = {'input_ids':      batch[1],
+                          'attention_mask': batch[2],
+                          'token_type_ids': batch[3],
+                          'concat_input': False}
                 embeds_list.append(self.model(**inputs))
                 idxs_list.append(batch[0])
                 local_step += 1
@@ -160,9 +161,10 @@ class EmbeddingSubTrainer(object):
             dataloader = TripletEmbeddingDataLoader(args, dataset)
             for batch in dataloader:
                 batch = tuple(t.to(args.device) for t in batch)
-                inputs = {'input_ids_a':      batch[1],
-                          'attention_mask_a': batch[2],
-                          'token_type_ids_a': batch[3]}
+                inputs = {'input_ids':      batch[1],
+                          'attention_mask': batch[2],
+                          'token_type_ids': batch[3],
+                          'concat_input': False}
                 outputs = self.model(**inputs)
 
                 pos_neg_dot_prods = torch.sum(
@@ -190,9 +192,9 @@ class EmbeddingSubTrainer(object):
 
         total_time = sum(time_per_dataset)
         total_num_examples = 3 * sum(dataset_sizes) # because triplets
-        return {'loss' : np.mean(losses),
-                'time_per_example': total_time / total_num_examples,
-                'num_examples': total_num_examples}
+        return {'embed_loss' : np.mean(losses),
+                'embed_time_per_example': total_time / total_num_examples,
+                'embed_num_examples': total_num_examples}
 
     def _train_sigmoid(self, dataset_list):
         pass

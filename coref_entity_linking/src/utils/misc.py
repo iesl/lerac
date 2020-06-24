@@ -12,6 +12,8 @@ import torch.distributed as dist
 from IPython import embed
 
 
+CLS_TOKEN = '[CLS]'
+SEP_TOKEN = '[SEP]'
 START_HGHLGHT_TOKEN = '[unused1]'
 END_HGHLGHT_TOKEN = '[unused2]'
 
@@ -19,8 +21,10 @@ END_HGHLGHT_TOKEN = '[unused2]'
 def flatten(lst):
     return [item for sublist in lst for item in sublist]
 
+
 def unique(lst):
     return list(set(lst))
+
 
 def all_same(lst):
     return lst.count(lst[0]) == len(lst)

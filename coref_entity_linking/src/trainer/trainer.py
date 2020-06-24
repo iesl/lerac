@@ -29,12 +29,7 @@ from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from model import (MirrorStackEmbeddingModel,
-                   MirrorEmbeddingModel,
-                   ConcatenationModel,
-                   CrossEncoder,
-                   PolyEncoder,
-                   ScalarAffineModel)
+from model import MirrorEmbeddingModel
 from data.preprocessing import ZeshelPreprocessor
 from data.data import (MentionClusteringProcessor,
                   LinkingProcessor,

@@ -4,7 +4,8 @@ import math
 import numpy as np
 from scipy.sparse.csgraph import minimum_spanning_tree, connected_components
 
-from data.datasets import TripletEmbeddingDataset
+from data.datasets import (TripletEmbeddingDataset,
+                           TripletConcatenationDataset)
 from utils.comm import get_rank, synchronize
 
 from IPython import embed
@@ -41,7 +42,8 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
         pairs_collection = self.pairs_creator(clusters_mx, sparse_graph)
 
         # build datasets
-        dataset_list = []
+        embed_dataset_list = []
+        concat_dataset_list = []
         triplets = []
         for cluster_pairs_list in pairs_collection:
             for joint_collection in cluster_pairs_list:
@@ -57,15 +59,23 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                     triplets.append((anchor, p, n))
 
         # append one big dataset
-        dataset_list.append(
+        embed_dataset_list.append(
                 TripletEmbeddingDataset(
                     args,
                     triplets,
                     args.train_cache_dir
                 )
         )
+        # append one big dataset
+        concat_dataset_list.append(
+                TripletConcatenationDataset(
+                    args,
+                    triplets,
+                    args.train_cache_dir
+                )
+        )
 
-        return dataset_list
+        return embed_dataset_list, concat_dataset_list
 
 
 class SigmoidDatasetBuilder(SupervisedClusteringDatasetBuilder):

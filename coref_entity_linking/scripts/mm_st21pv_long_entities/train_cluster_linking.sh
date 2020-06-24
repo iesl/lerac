@@ -1,20 +1,10 @@
 #!/bin/bash
 
 # README:
-# - always call from the root directory of this repo
+# - always call from the `coref_entity_linking directory` of this repo
 
 set -eux
 
-#repo_root_dir='coref_entity_linking'
-#parent_pwd=$(basename `readlink -ve "/proc/$PPID/cwd"`)
-#
-#if [ $parent_pwd != $repo_root_dir ]; then
-#     echo "Script must be run from the root directory of the repo"
-#     exit 1;
-#fi
-
-#mkdir -p exp 
-#
 
 #BASE_DIR="/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking"
 BASE_DIR="/home/meta-powerusers/lerac/coref_entity_linking"
@@ -33,7 +23,7 @@ python -m torch.distributed.launch \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
         --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp1/ \
-        --log_dir ${EXTERNAL_BASE_DIR}/logs/
+        --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_train \
         --do_train_eval \
         --do_val \
