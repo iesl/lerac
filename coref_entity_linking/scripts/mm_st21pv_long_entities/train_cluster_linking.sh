@@ -18,6 +18,7 @@ set -eux
 
 #BASE_DIR="/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking"
 BASE_DIR="/home/meta-powerusers/lerac/coref_entity_linking"
+EXTERNAL_BASE_DIR="/home/ds-share/data2/users/rangell/lerac/coref_entity_linking/"
 DATASET="mm_st21pv_long_entities"
 
 train_domains=( "train" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
@@ -31,8 +32,8 @@ python -m torch.distributed.launch \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
-        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp0/ \
-        --log_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp0/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp1/ \
+        --log_dir ${EXTERNAL_BASE_DIR}/logs/
         --do_train \
         --do_train_eval \
         --do_val \
