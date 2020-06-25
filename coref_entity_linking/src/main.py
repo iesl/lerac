@@ -260,11 +260,11 @@ def main():
 
     if args.do_train:
         trainer.train()
-    elif args.do_train_eval:
+    if args.do_train_eval:
         trainer.evaluate(split='train')
-    elif args.do_val:
+    if args.do_val:
         trainer.evaluate(split='val')
-    elif args.do_test:
+    if args.do_test:
         trainer.evaluate(split='test')
 
 

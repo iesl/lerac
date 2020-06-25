@@ -47,6 +47,5 @@ python -m torch.distributed.launch \
         --evaluate_during_training \
         --logging_steps 25 \
         --knn_refresh_steps 100 \
-        --save_steps 300 \
         --train_domains ${train_domains[@]} \
         --val_domains ${val_domains[@]} \

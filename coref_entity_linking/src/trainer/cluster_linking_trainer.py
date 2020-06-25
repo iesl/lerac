@@ -319,21 +319,19 @@ class ClusterLinkingTrainer(Trainer):
                     self.train_knn_index.refresh_index()
                     logger.info('Done.')
 
-                # save the model
-                if global_step % args.save_steps == 0:
-                    if get_rank() == 0:
-                        for st in self.sub_trainers.values():
-                            st.save_model(global_step)
-                synchronize()
+            # save the model at the end of every epoch
+            if get_rank() == 0:
+                self.embed_sub_trainer.save_model(global_step)
+            synchronize()
 
             logger.info('********** [END] epoch: {} **********'.format(epoch))
 
-            # run full evaluation at the end of each epoch
-            if args.evaluate_during_training:
-                if args.do_train_eval:
-                    train_eval_metrics = self.evaluate(split='train')
-                if args.do_val:
-                    val_metrics = self.evaluate(split='val')
+            ## run full evaluation at the end of each epoch
+            #if args.evaluate_during_training:
+            #    if args.do_train_eval:
+            #        train_eval_metrics = self.evaluate(split='train')
+            #    if args.do_val:
+            #        val_metrics = self.evaluate(split='val')
 
 
 
@@ -363,7 +361,12 @@ class ClusterLinkingTrainer(Trainer):
         knn_index.refresh_index()
 
         if args.clustering_domain == 'within_doc':
-            metrics = eval_wdoc(args, metadata, knn_index, sub_trainer)
+            embed_metrics = eval_wdoc(
+                args, metadata, knn_index, embed_sub_trainer
+            )
+            concat_metrics = eval_wdoc(
+                args, metadata, knn_index, concat_sub_trainer
+            )
         else:
             metrics = eval_xdoc(args, metadata, knn_index, sub_trainer)
 
