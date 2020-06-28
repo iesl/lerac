@@ -153,7 +153,7 @@ class InferenceEmbeddingDataset(DistributedSafeDataset):
 
     def __getitem__(self, index):
         if index >= len(self.examples):
-            index = random.randint(0, len(self) - 1)
+            index = random.randint(0, len(self.examples) - 1)
         _id = self.examples[index]
         _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
         _example_features = _create_bi_encoder_input(
@@ -182,7 +182,7 @@ class TripletEmbeddingDataset(DistributedSafeDataset):
 
     def __getitem__(self, index):
         if index >= len(self.examples):
-            index = random.randint(0, len(self) - 1)
+            index = random.randint(0, len(self.examples) - 1)
         ids = self.examples[index]
         example_idx = []
         input_ids = []
@@ -218,7 +218,7 @@ class TripletConcatenationDataset(DistributedSafeDataset):
 
     def __getitem__(self, index):
         if index >= len(self.examples):
-            index = random.randint(0, len(self) - 1)
+            index = random.randint(0, len(self.examples) - 1)
         ids = self.examples[index]
         example_idxs = []
         input_ids = []
@@ -282,6 +282,83 @@ class TripletConcatenationDataset(DistributedSafeDataset):
             )
 
         # pack all off the pairs' data nicely
+        return (torch.stack(example_idxs),
+                torch.stack(input_ids),
+                torch.stack(attention_mask),
+                torch.stack(token_type_ids))
+
+
+class PairsConcatenationDataset(DistributedSafeDataset):
+    """
+    For triplet training with concatenation model.
+    """
+    def __init__(self, args, examples, example_dir):
+        super(PairsConcatenationDataset, self).__init__(args, examples)
+        self.example_dir = example_dir
+
+    def __getitem__(self, index):
+        if index >= len(self.examples):
+            index = random.randint(0, len(self.examples) - 1)
+        ids = self.examples[index]
+        example_idxs = []
+        input_ids = []
+        attention_mask = []
+        token_type_ids = []
+
+        # anchor, positive, and negative
+        idx_a, idx_b = ids
+        seq_a = _load_example(self.example_dir, idx_a).numpy().tolist()
+        seq_b = _load_example(self.example_dir, idx_b).numpy().tolist()
+
+        # get the forward direction features
+        fwd_feats = _create_cross_encoder_input(
+            idx_a,
+            idx_b,
+            seq_a,
+            seq_b,
+            2*self.args.max_seq_length,
+            self.args.tokenizer
+        )
+        fwd_input_ids, fwd_attention_mask, fwd_token_type_ids = fwd_feats
+
+        # get the backward direction features
+        bwd_feats = _create_cross_encoder_input(
+            idx_a,
+            idx_b,
+            seq_a,
+            seq_b,
+            2*self.args.max_seq_length,
+            self.args.tokenizer
+        )
+        bwd_input_ids, bwd_attention_mask, bwd_token_type_ids = bwd_feats
+
+        # pack forward and backward features together
+        example_idxs.append(
+            torch.stack(
+                (torch.tensor((idx_a, idx_b), dtype=torch.long),
+                 torch.tensor((idx_b, idx_a), dtype=torch.long))
+            )
+        )
+        input_ids.append(
+            torch.stack(
+                (torch.tensor(fwd_input_ids, dtype=torch.long),
+                 torch.tensor(bwd_input_ids, dtype=torch.long))
+            )
+        )
+        attention_mask.append(
+            torch.stack(
+                (torch.tensor(fwd_attention_mask, dtype=torch.long),
+                 torch.tensor(bwd_attention_mask, dtype=torch.long))
+            )
+        )
+        token_type_ids.append(
+            torch.stack(
+                (torch.tensor(fwd_token_type_ids, dtype=torch.long),
+                 torch.tensor(bwd_token_type_ids, dtype=torch.long))
+            )
+        )
+
+        # this is for correcting dimensionality
         return (torch.stack(example_idxs),
                 torch.stack(input_ids),
                 torch.stack(attention_mask),

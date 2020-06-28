@@ -18,7 +18,7 @@ set -eux
 
 #BASE_DIR="/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking"
 BASE_DIR="/home/meta-powerusers/lerac/coref_entity_linking"
-EXTERNAL_BASE_DIR="/home/ds-share/data2/users/rangell/lerac/coref_entity_linking/"
+EXTERNAL_BASE_DIR="/home/ds-share/data2/users/rangell/lerac/coref_entity_linking"
 DATASET="mm_st21pv_long_entities"
 
 train_domains=( "train" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
@@ -30,18 +30,17 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir data/${DATASET}/ \
         --model_type bert \
-        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp1/checkpoint-11163/ \
+        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp2/checkpoint-11163/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp1/checkpoint-11163/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp2/checkpoint-11163/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
-        --do_train_eval \
         --do_val \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --pooling_strategy 'pool_highlighted_outputs' \
         --clustering_domain 'within_doc' \
         --available_entities 'candidates_only' \
-        --k 16 \
+        --k 32 \
         --per_gpu_infer_batch 256 \
         --evaluate_during_training \
         --logging_steps 25 \

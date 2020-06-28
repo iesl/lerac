@@ -82,3 +82,17 @@ class TripletConcatenationDataLoader(DataLoader):
                 num_workers=args.num_dataloader_workers,
                 pin_memory=True,
         )
+
+
+class PairsConcatenationDataLoader(DataLoader):
+    """
+    Custom DataLoader for PairsConcatenationDataset.
+    """
+    def __init__(self, args, dataset):
+        super(PairsConcatenationDataLoader, self).__init__(
+                dataset,
+                sampler=_custom_distributed_sampler(dataset),
+                batch_size=max(args.train_batch_size // 2, 1),
+                num_workers=args.num_dataloader_workers,
+                pin_memory=True,
+        )

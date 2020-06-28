@@ -11,7 +11,7 @@ from sklearn.metrics import (fowlkes_mallows_score,
                              adjusted_rand_score)
 from tqdm import tqdm
 
-from utils.comm import get_rank, synchronize
+from utils.comm import get_rank, synchronize, broadcast
 from utils.misc import flatten, unique
 
 from evaluation.special_partition import special_partition
@@ -22,7 +22,7 @@ from IPython import embed
 logger = logging.getLogger(__name__)
 
 
-def eval_wdoc(args, metadata, knn_index, sub_trainer):
+def eval_wdoc(args, example_dir, metadata, knn_index, sub_trainer):
     logger.info('Building within doc sparse graphs...')
     doc_level_graphs = []
     per_doc_coref_clusters = []
@@ -36,6 +36,7 @@ def eval_wdoc(args, metadata, knn_index, sub_trainer):
             build_sparse_affinity_graph(
                 args,
                 doc_mentions,
+                example_dir,
                 metadata,
                 knn_index,
                 sub_trainer,
@@ -80,14 +81,17 @@ def eval_wdoc(args, metadata, knn_index, sub_trainer):
         'coref_threshold' : coref_metrics['threshold'],
         'vanilla_recall' : linking_metrics['vanilla_recall'],
         'vanilla_accuracy' : linking_metrics['vanilla_accuracy'],
-        'joint_accuracy' : joint_metrics['joint_accuracy']
+        'joint_accuracy' : joint_metrics['joint_accuracy'],
+        'joint_cc_recall' : joint_metrics['joint_cc_recall']
     }
+
+    embed()
 
     synchronize()
     return metrics
 
 
-def eval_xdoc(args, metadata, knn_index, sub_trainer):
+def eval_xdoc(args, example_dir, metadata, knn_index, sub_trainer):
     pass
 
 
@@ -176,9 +180,12 @@ def compute_linking_metrics(metadata, linking_graphs):
             linking_hits += 1
         linking_total += 1
 
-    results_dict = {'vanilla_recall' : recall_hits / recall_total,
-                    'vanilla_accuracy' : linking_hits / linking_total,
-                    'num_no_candidates' : len(no_candidates)}
+    results_dict = {
+            'vanilla_recall' : recall_hits / recall_total,
+            'vanilla_accuracy' : linking_hits / linking_total,
+            'num_no_candidates' : len(no_candidates),
+            'vanilla_pred_midx2eidx' : {m : e for m, e in zip(midxs, pred_eidxs)}
+    }
 
     return results_dict, slim_global_graph
 
@@ -186,6 +193,19 @@ def compute_linking_metrics(metadata, linking_graphs):
 def compute_joint_metrics(metadata, joint_graphs):
     # get global joint graph
     global_joint_graph = _merge_sparse_graphs(joint_graphs)
+
+    # compute recall at this stage
+    _, cc_labels = connected_components(
+            csgraph=global_joint_graph,
+            directed=False,
+            return_labels=True
+    )
+    cc_recall_hits, cc_recall_total = 0, 0
+    for midx, true_eidx in metadata.midx2eidx.items():
+        if cc_labels[midx] == cc_labels[true_eidx]:
+            cc_recall_hits += 1
+        cc_recall_total += 1
+    cc_recall = cc_recall_hits / cc_recall_total
 
     # reorder the data for the requirements of the `special_partition` function
     _row = np.concatenate((global_joint_graph.row, global_joint_graph.col))
@@ -252,11 +272,14 @@ def compute_joint_metrics(metadata, joint_graphs):
             joint_hits += 1
         joint_total += 1
 
-    return {'joint_accuracy' : joint_hits / joint_total}
+    return {'joint_accuracy' : joint_hits / joint_total,
+            'joint_pred_midx2eidx': pred_midx2eidx,
+            'joint_cc_recall': cc_recall}
 
 
 def build_sparse_affinity_graph(args,
                                 midxs, 
+                                example_dir,
                                 metadata,
                                 knn_index,
                                 sub_trainer,
@@ -267,13 +290,6 @@ def build_sparse_affinity_graph(args,
     coref_graph = None
     linking_graph = None
     if get_rank() == 0:
-        # FIXME: hack to get all of the embeddings,
-        #        should use sub_trainer to get scores
-        idxs, embeds = knn_index.idxs, knn_index.X
-
-        # create inverse index for mapping
-        inverse_idxs = {v : k for k, v in enumerate(idxs)}
-
         mention_knn = None
         if build_coref_graph or args.available_entities == 'knn_candidates':
             # get all of the mention kNN
@@ -282,19 +298,25 @@ def build_sparse_affinity_graph(args,
             )
             mention_knn = mention_knn[:,1:]
 
-        if build_coref_graph:
-            # list of edges for sparse graph we will build
-            coref_graph_edges = []
-
-            # add mention-mention edges to 
+    if build_coref_graph:
+        # list of edges for sparse graph we will build
+        coref_graph_edges = []
+        if get_rank() == 0:
+            # add mention-mention edges to list
             coref_graph_edges.extend(
                 [tuple(sorted((a, b)))
                     for a, l in zip(midxs, mention_knn) for b in l if a != b]
             )
             coref_graph_edges = unique(coref_graph_edges)
-            affinities = [np.dot(embeds[inverse_idxs[i]],
-                                 embeds[inverse_idxs[j]]) 
-                            for i, j in coref_graph_edges]
+
+        # broadcast edges to all processes to compute affinities
+        coref_graph_edges = broadcast(coref_graph_edges, src=0)
+        affinities = sub_trainer.get_edge_affinities(
+                coref_graph_edges, example_dir, knn_index
+        )
+        # affinities are gathered to only rank 0 process
+        if get_rank() == 0:
+            # build the graph
             coref_graph_edges = np.asarray(coref_graph_edges).T
             _sparse_num = metadata.num_mentions + metadata.num_entities
             coref_graph = coo_matrix(
@@ -302,10 +324,10 @@ def build_sparse_affinity_graph(args,
                         shape=(_sparse_num, _sparse_num)
             )
 
-        if build_linking_graph:
-            # list of edges for sparse graph we will build
-            linking_graph_edges = []
-
+    if build_linking_graph:
+        # list of edges for sparse graph we will build
+        linking_graph_edges = []
+        if get_rank() == 0:
             # get mention-entity edges
             if args.available_entities == 'candidates_only':
                 for midx in midxs:
@@ -327,11 +349,18 @@ def build_sparse_affinity_graph(args,
                 # use `knn_index` to do this efficiently
                 raise NotImplementedError('open domain not yet')
 
-            # build the graph
+            # get all of the edges
             linking_graph_edges = unique(linking_graph_edges)
-            affinities = [np.dot(embeds[inverse_idxs[i]],
-                                 embeds[inverse_idxs[j]]) 
-                            for i, j in linking_graph_edges]
+
+        # broadcast edges to all processes to compute affinities
+        linking_graph_edges = broadcast(linking_graph_edges, src=0)
+        affinities = sub_trainer.get_edge_affinities(
+                linking_graph_edges, example_dir, knn_index
+        )
+
+        # affinities are gathered to only rank 0 process
+        if get_rank() == 0:
+            # build the graph
             linking_graph_edges = np.asarray(linking_graph_edges).T
             _sparse_num = metadata.num_mentions + metadata.num_entities
             linking_graph = coo_matrix((affinities, linking_graph_edges),

@@ -191,9 +191,13 @@ class ClusterLinkingTrainer(Trainer):
         # create custom datasets for training
         embed_dataset_list = None
         concat_dataset_list = None
+        dataset_metrics = None
         if get_rank() == 0:
-            dataset_lists = self.dataset_builder(clusters_mx, sparse_graph)
+            dataset_lists, dataset_metrics = self.dataset_builder(
+                    clusters_mx, sparse_graph, self.train_metadata.num_entities
+            )
             embed_dataset_list, concat_dataset_list = dataset_lists
+        dataset_metrics = broadcast(dataset_metrics, src=0)
         embed_dataset_list = broadcast(embed_dataset_list, src=0)
         concat_dataset_list = broadcast(concat_dataset_list, src=0)
 
@@ -202,6 +206,7 @@ class ClusterLinkingTrainer(Trainer):
         concat_return_dict = self.concat_sub_trainer.train_on_subset(concat_dataset_list)
 
         return_dict = {}
+        return_dict.update(dataset_metrics)
         return_dict.update(embed_return_dict)
         return_dict.update(concat_return_dict)
 
@@ -326,12 +331,12 @@ class ClusterLinkingTrainer(Trainer):
 
             logger.info('********** [END] epoch: {} **********'.format(epoch))
 
-            ## run full evaluation at the end of each epoch
-            #if args.evaluate_during_training:
-            #    if args.do_train_eval:
-            #        train_eval_metrics = self.evaluate(split='train')
-            #    if args.do_val:
-            #        val_metrics = self.evaluate(split='val')
+            # run full evaluation at the end of each epoch
+            if args.evaluate_during_training:
+                if args.do_train_eval:
+                    train_eval_metrics = self.evaluate(split='train')
+                if args.do_val:
+                    val_metrics = self.evaluate(split='val')
 
 
 
@@ -347,28 +352,48 @@ class ClusterLinkingTrainer(Trainer):
 
         logger.info('********** [START] eval: {} **********'.format(split))
 
-        sub_trainer = self.sub_trainers['embedding_model']
         if split == 'train':
             metadata = self.train_metadata
             knn_index = self.train_knn_index
+            example_dir = args.train_cache_dir
         elif split == 'val':
             metadata = self.val_metadata
             knn_index = self.val_knn_index
+            example_dir = args.val_cache_dir
         else:
             metadata = self.test_metadata
             knn_index = self.test_knn_index
+            example_dir = args.test_cache_dir
 
+        # refresh the knn index
         knn_index.refresh_index()
 
+        embed_metrics = None
+        concat_metrics = None
         if args.clustering_domain == 'within_doc':
             embed_metrics = eval_wdoc(
-                args, metadata, knn_index, embed_sub_trainer
+                args, example_dir, metadata, knn_index, self.embed_sub_trainer
             )
             concat_metrics = eval_wdoc(
-                args, metadata, knn_index, concat_sub_trainer
+                args, example_dir, metadata, knn_index, self.concat_sub_trainer
             )
         else:
-            metrics = eval_xdoc(args, metadata, knn_index, sub_trainer)
+            embed_metrics = eval_xdoc(
+                args, example_dir, metadata, knn_index, self.embed_sub_trainer
+            )
+            concat_metrics = eval_xdoc(
+                args, example_dir, metadata, knn_index, self.concat_sub_trainer
+            )
+
+        embed_metrics = broadcast(embed_metrics, src=0)
+        concat_metrics = broadcast(concat_metrics, src=0)
+
+        # pool all of the metrics into one dictionary
+        embed_metrics = {'embed_' + k : v for k, v in embed_metrics.items()}
+        concat_metrics = {'concat_' + k : v for k, v in concat_metrics.items()}
+        metrics = {}
+        metrics.update(embed_metrics)
+        metrics.update(concat_metrics)
 
         logger.info(metrics)
         logger.info('********** [END] eval: {} **********'.format(split))

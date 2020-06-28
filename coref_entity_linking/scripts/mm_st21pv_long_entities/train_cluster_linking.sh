@@ -22,11 +22,9 @@ python -m torch.distributed.launch \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp1/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp2/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_train \
-        --do_train_eval \
-        --do_val \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --pooling_strategy 'pool_highlighted_outputs' \
@@ -44,7 +42,6 @@ python -m torch.distributed.launch \
         --per_gpu_train_batch 32 \
         --per_gpu_infer_batch 256 \
         --num_train_epochs 10 \
-        --evaluate_during_training \
         --logging_steps 25 \
         --knn_refresh_steps 100 \
         --train_domains ${train_domains[@]} \

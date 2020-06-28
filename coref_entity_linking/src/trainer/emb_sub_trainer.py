@@ -178,6 +178,13 @@ class EmbeddingSubTrainer(object):
                         + args.margin
                     )
                 )
+                #loss = torch.mean(
+                #    torch.sigmoid(
+                #        pos_neg_dot_prods[:, 1]   # negative dot products
+                #        - pos_neg_dot_prods[:, 0] # positive dot products
+                #    )
+                #)
+
                 losses.append(loss.item())
                 loss.backward()
 
@@ -205,6 +212,14 @@ class EmbeddingSubTrainer(object):
     def _train_accum_max_margin(self, dataset_list):
         pass
 
+    def get_edge_affinities(self, edges, example_dir, knn_index):
+        if get_rank() == 0:
+            idxs, embeds = knn_index.idxs, knn_index.X
+            inverse_idxs = {v : k for k, v in enumerate(idxs)}
+            affinities = [np.dot(embeds[inverse_idxs[i]],
+                                 embeds[inverse_idxs[j]]) 
+                              for i, j in edges]
+            return affinities
 
     def save_model(self, global_step):
         self.model.module.save_model(suffix='checkpoint-{}'.format(global_step))
