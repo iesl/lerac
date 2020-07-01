@@ -54,7 +54,7 @@ class ConcatenationSubTrainer(object):
                           'token_type_ids': batch[3],
                           'concat_input': True}
                 outputs = self.model(**inputs)
-                scores = torch.sigmoid(torch.mean(outputs, -1))
+                scores = torch.mean(outputs, -1)
 
                 loss = torch.mean(
                     F.relu(

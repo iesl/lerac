@@ -476,4 +476,5 @@ class VersatileBertModel(BertPreTrainedModel):
         output = F.gelu(self.concatenation_layer2(output))
         output = self.concatenation_layer3(output)
         output = output.reshape(batch_size, num_seq, sym_dim)
+        output = torch.sigmoid(output)
         return output

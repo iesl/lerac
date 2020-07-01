@@ -2,6 +2,7 @@ from collections import defaultdict
 from copy import deepcopy
 import logging
 import numpy as np
+import pickle
 from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.csgraph import (minimum_spanning_tree,
                                   connected_components,
@@ -22,7 +23,14 @@ from IPython import embed
 logger = logging.getLogger(__name__)
 
 
-def eval_wdoc(args, example_dir, metadata, knn_index, sub_trainer):
+def eval_wdoc(args,
+              example_dir,
+              metadata,
+              knn_index,
+              sub_trainer,
+              save_fname=None):
+    assert save_fname != None
+
     logger.info('Building within doc sparse graphs...')
     doc_level_graphs = []
     per_doc_coref_clusters = []
@@ -85,7 +93,14 @@ def eval_wdoc(args, example_dir, metadata, knn_index, sub_trainer):
         'joint_cc_recall' : joint_metrics['joint_cc_recall']
     }
 
-    embed()
+    # save all of the predictions for later analysis
+    save_data = {}
+    save_data.update(coref_metrics)
+    save_data.update(linking_metrics)
+    save_data.update(joint_metrics)
+
+    with open(save_fname, 'wb') as f:
+        pickle.dump(save_data, f)
 
     synchronize()
     return metrics
@@ -175,8 +190,9 @@ def compute_linking_metrics(metadata, linking_graphs):
 
     # compute linking accuracy
     linking_hits, linking_total = 0, 0
-    for midx, pred_eidx in zip(midxs, pred_eidxs):
-        if pred_eidx == metadata.midx2eidx[midx]:
+    pred_midx2eidx = {m : e for m, e in zip(midxs, pred_eidxs)}
+    for midx, true_eidx in metadata.midx2eidx.items():
+        if true_eidx == pred_midx2eidx.get(midx, -1):
             linking_hits += 1
         linking_total += 1
 
@@ -184,7 +200,8 @@ def compute_linking_metrics(metadata, linking_graphs):
             'vanilla_recall' : recall_hits / recall_total,
             'vanilla_accuracy' : linking_hits / linking_total,
             'num_no_candidates' : len(no_candidates),
-            'vanilla_pred_midx2eidx' : {m : e for m, e in zip(midxs, pred_eidxs)}
+            'vanilla_pred_midx2eidx' : {m : e for m, e in zip(midxs, pred_eidxs)},
+            'vanilla_slim_graph' : slim_global_graph
     }
 
     return results_dict, slim_global_graph
@@ -217,6 +234,12 @@ def compute_joint_metrics(metadata, joint_graphs):
     special_row = np.asarray(special_row, dtype=np.int)
     special_col = np.asarray(special_col, dtype=np.int)
     special_data = np.asarray(special_data)
+
+    # reconstruct the global joint graph shape
+    global_joint_graph = coo_matrix(
+            (special_data, (special_row, special_col)),
+            shape=global_joint_graph.shape
+    )
 
     # create siamese indices for easy lookups during partitioning
     edge_indices = {e : i for i, e in enumerate(zip(special_row, special_col))}
@@ -274,7 +297,9 @@ def compute_joint_metrics(metadata, joint_graphs):
 
     return {'joint_accuracy' : joint_hits / joint_total,
             'joint_pred_midx2eidx': pred_midx2eidx,
-            'joint_cc_recall': cc_recall}
+            'joint_cc_recall': cc_recall,
+            'joint_slim_graph': global_joint_graph,
+            'joint_keep_edge_mask': keep_edge_mask}
 
 
 def build_sparse_affinity_graph(args,
@@ -338,16 +363,27 @@ def build_sparse_affinity_graph(args,
                         )
             elif args.available_entities == 'knn_candidates':
                 # get all of the mention kNN
+                available_eidxs = flatten(metadata.midx2cand.values())
                 cand_gen_knn = knn_index.get_knn_limited_index(
-                        midxs, exclude_index_idxs=midxs, k=args.k
+                        midxs,
+                        include_index_idxs=available_eidxs,
+                        k=args.k
                 )
                 linking_graph_edges.extend(
                     [tuple(sorted((a, b)))
                         for a, l in zip(midxs, cand_gen_knn) for b in l]
                 )
             else: # 'open_domain'
-                # use `knn_index` to do this efficiently
-                raise NotImplementedError('open domain not yet')
+                # get all of the mention kNN
+                cand_gen_knn = knn_index.get_knn_limited_index(
+                        midxs,
+                        include_index_idxs=np.arange(metadata.num_entities),
+                        k=args.k
+                )
+                linking_graph_edges.extend(
+                    [tuple(sorted((a, b)))
+                        for a, l in zip(midxs, cand_gen_knn) for b in l]
+                )
 
             # get all of the edges
             linking_graph_edges = unique(linking_graph_edges)

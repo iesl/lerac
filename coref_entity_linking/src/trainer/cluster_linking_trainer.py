@@ -2,6 +2,7 @@ from collections import defaultdict
 import logging
 from functools import reduce
 import numpy as np
+import os
 from scipy.sparse import coo_matrix
 from torch.utils.data import DataLoader, SequentialSampler
 from tqdm import tqdm, trange
@@ -194,7 +195,7 @@ class ClusterLinkingTrainer(Trainer):
         dataset_metrics = None
         if get_rank() == 0:
             dataset_lists, dataset_metrics = self.dataset_builder(
-                    clusters_mx, sparse_graph, self.train_metadata.num_entities
+                    clusters_mx, sparse_graph, self.train_metadata
             )
             embed_dataset_list, concat_dataset_list = dataset_lists
         dataset_metrics = broadcast(dataset_metrics, src=0)
@@ -372,12 +373,17 @@ class ClusterLinkingTrainer(Trainer):
         concat_metrics = None
         if args.clustering_domain == 'within_doc':
             embed_metrics = eval_wdoc(
-                args, example_dir, metadata, knn_index, self.embed_sub_trainer
+                args, example_dir, metadata, knn_index, self.embed_sub_trainer,
+                save_fname=os.path.join(args.output_dir,
+                                        'embed.' + split + '.debug_results.pkl')
             )
             concat_metrics = eval_wdoc(
-                args, example_dir, metadata, knn_index, self.concat_sub_trainer
+                args, example_dir, metadata, knn_index, self.concat_sub_trainer,
+                save_fname=os.path.join(args.output_dir,
+                                        'concat.' + split + '.debug_results.pkl')
             )
         else:
+            # FIXME: update after we finalize wdoc changes
             embed_metrics = eval_xdoc(
                 args, example_dir, metadata, knn_index, self.embed_sub_trainer
             )

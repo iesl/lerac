@@ -22,9 +22,10 @@ python -m torch.distributed.launch \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp2/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp5/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_train \
+        --do_val \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --pooling_strategy 'pool_highlighted_outputs' \
@@ -32,7 +33,7 @@ python -m torch.distributed.launch \
         --available_entities 'candidates_only' \
         --training_method 'triplet' \
         --pair_gen_method 'all_pairs' \
-        --k 32 \
+        --k 16 \
         --max_in_cluster_dist 0.1 \
         --margin 0.5 \
         --warmup_steps 0 \
@@ -44,5 +45,6 @@ python -m torch.distributed.launch \
         --num_train_epochs 10 \
         --logging_steps 25 \
         --knn_refresh_steps 100 \
+        --evaluate_during_training \
         --train_domains ${train_domains[@]} \
         --val_domains ${val_domains[@]} \
