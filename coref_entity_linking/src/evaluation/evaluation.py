@@ -291,7 +291,7 @@ def compute_joint_metrics(metadata, joint_graphs):
 
     joint_hits, joint_total = 0, 0
     for midx, true_eidx in metadata.midx2eidx.items():
-        if pred_midx2eidx[midx] == true_eidx:
+        if pred_midx2eidx.get(midx, -1) == true_eidx:
             joint_hits += 1
         joint_total += 1
 
