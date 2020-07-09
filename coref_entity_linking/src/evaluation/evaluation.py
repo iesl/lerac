@@ -40,6 +40,7 @@ def eval_wdoc(args,
         )
         doc_mentions = np.asarray([x for k, v in doc_clusters.items()
                                         for x in v if x != k])
+        doc_mentions = np.sort(doc_mentions)
         doc_level_graphs.append(
             build_sparse_affinity_graph(
                 args,
@@ -363,10 +364,10 @@ def build_sparse_affinity_graph(args,
                         )
             elif args.available_entities == 'knn_candidates':
                 # get all of the mention kNN
-                available_eidxs = flatten(metadata.midx2cand.values())
+                all_midxs = list(metadata.midx2eidx.keys())
                 cand_gen_knn = knn_index.get_knn_limited_index(
                         midxs,
-                        include_index_idxs=available_eidxs,
+                        exclude_index_idxs=all_midxs,
                         k=args.k
                 )
                 linking_graph_edges.extend(

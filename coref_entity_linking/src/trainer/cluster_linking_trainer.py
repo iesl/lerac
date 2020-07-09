@@ -3,6 +3,7 @@ import logging
 from functools import reduce
 import numpy as np
 import os
+import pickle
 from scipy.sparse import coo_matrix
 from torch.utils.data import DataLoader, SequentialSampler
 from tqdm import tqdm, trange
@@ -251,6 +252,7 @@ class ClusterLinkingTrainer(Trainer):
                     avail_neg_idxs = self.avail_entity_idxs + neg_midxs
 
                 # produce knn negatives for cluster and append to list
+                logger.warn('SAMPLING TERRRIBLE NEGATIVES THAT AREN\'T SORTED!!!!!')
                 negatives_list.append(
                     self.train_knn_index.get_knn_limited_index(
                             c_idxs, include_index_idxs=avail_neg_idxs
@@ -258,6 +260,7 @@ class ClusterLinkingTrainer(Trainer):
                 )
             else:
                 # produce knn negatives for cluster and append to list
+                logger.warn('SAMPLING TERRRIBLE NEGATIVES THAT AREN\'T SORTED!!!!!')
                 negatives_list.append(
                     self.train_knn_index.get_knn_limited_index(
                             c_idxs, exclude_index_idxs=c_idxs
@@ -369,6 +372,12 @@ class ClusterLinkingTrainer(Trainer):
         # refresh the knn index
         knn_index.refresh_index()
 
+        # save the knn index
+        knn_save_fname = os.path.join(args.output_dir,
+                                      'knn_index.' + split + '.debug_results.pkl')
+        with open(knn_save_fname, 'wb') as f:
+            pickle.dump((knn_index.idxs, knn_index.X), f, pickle.HIGHEST_PROTOCOL)
+
         embed_metrics = None
         concat_metrics = None
         if args.clustering_domain == 'within_doc':
@@ -377,6 +386,10 @@ class ClusterLinkingTrainer(Trainer):
                 save_fname=os.path.join(args.output_dir,
                                         'embed.' + split + '.debug_results.pkl')
             )
+            if get_rank() == 0:
+                embed()
+            synchronize()
+            exit()
             concat_metrics = eval_wdoc(
                 args, example_dir, metadata, knn_index, self.concat_sub_trainer,
                 save_fname=os.path.join(args.output_dir,
