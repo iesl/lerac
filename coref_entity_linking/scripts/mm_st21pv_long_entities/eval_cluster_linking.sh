@@ -39,7 +39,7 @@ python -m torch.distributed.launch \
         --seq_embed_dim 128 \
         --pooling_strategy 'pool_highlighted_outputs' \
         --clustering_domain 'within_doc' \
-        --available_entities 'knn_candidates' \
+        --available_entities 'candidates_only' \
         --k 32 \
         --per_gpu_infer_batch 256 \
         --evaluate_during_training \

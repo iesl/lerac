@@ -1,4 +1,5 @@
 import faiss
+import json
 from tabulate import tabulate
 from types import SimpleNamespace
 import numpy as np
@@ -56,18 +57,21 @@ def load_data_files():
 
 def compute_accuracy(results_data, metadata, pred_key=''):
     assert pred_key in results_data.keys()
+    correct_midxs = []
     hits, total = 0, 0
     for midx, true_label in metadata.midx2eidx.items():
         pred_label = results_data[pred_key].get(midx, -1)
         assert 'joint' not in pred_key or pred_label != -1
         if true_label == pred_label:
             hits += 1
+            correct_midxs.append(midx)
         total += 1
-    return hits / total
+    return hits / total, correct_midxs
 
 
-def compute_gold_clusters_linking_recall(results_data, metadata, clusters):
+def compute_gold_clusters_recall(results_data, metadata, clusters):
     # `clusters` is a list of lists of midxs
+    correct_midxs = []
     hits, total = 0, 0
     for c in clusters:
         _linked_eidxs = list(map(lambda midx : metadata.midx2eidx[midx], c))
@@ -78,11 +82,12 @@ def compute_gold_clusters_linking_recall(results_data, metadata, clusters):
         )
         if gold_eidx in pred_eidxs:
             hits += len(c)
+            correct_midxs.extend(c)
         total += len(c)
-    return hits / total
+    return hits / total, correct_midxs
 
 
-def compute_gold_clusters_linking_accuracy(results_data,
+def compute_gold_clusters_accuracy(results_data,
                                            metadata,
                                            knn_idxs,
                                            knn_X,
@@ -117,6 +122,7 @@ def compute_gold_clusters_linking_accuracy(results_data,
 
     print('added gold eidxs {}'.format(added_gold_eidxs))
 
+    correct_midxs = []
     hits, total = 0, 0
     for c in clusters:
         _linked_eidxs = list(map(lambda midx : metadata.midx2eidx[midx], c))
@@ -126,9 +132,10 @@ def compute_gold_clusters_linking_accuracy(results_data,
                 lambda x : pred_midx2eidx_w_scores.get(x, (-1, 0.0)), c
         )
         if gold_eidx == max(pred_eidxs, key=lambda x : x[1])[0]:
+            correct_midxs.extend(c)
             hits += len(c)
         total += len(c)
-    return hits / total
+    return hits / total, correct_midxs
 
 
 def knn_index_check(metadata, knn_idxs, knn_X, results):
@@ -160,8 +167,13 @@ def knn_index_check(metadata, knn_idxs, knn_X, results):
                 hits += 1
             total += 1
         recall_dict[k] = hits / total
-    embed()
-    exit()
+    print('knn embed recall:\n{}'.format(json.dumps(recall_dict, indent=4)))
+
+
+def list_diff(list_a, list_b):
+    a_not_b = [x for x in list_a if x not in list_b]
+    b_not_a = [x for x in list_b if x not in list_a]
+    return a_not_b, b_not_a
             
 
 if __name__ == '__main__':
@@ -185,48 +197,38 @@ if __name__ == '__main__':
 
 
     print('Computing accuracies...')
-    results.embed_vanilla_accuracy = compute_accuracy(
+    results.embed_vanilla_accuracy, eva_correct_midxs = compute_accuracy(
             embed_results_data, metadata, pred_key='vanilla_pred_midx2eidx'
     )
-    results.concat_vanilla_accuracy = compute_accuracy(
+    results.concat_vanilla_accuracy, cva_correct_midxs = compute_accuracy(
             concat_results_data, metadata, pred_key='vanilla_pred_midx2eidx'
     )
 
-    results.embed_joint_accuracy = compute_accuracy(
+    results.embed_joint_accuracy, eja_correct_midxs = compute_accuracy(
             embed_results_data, metadata, pred_key='joint_pred_midx2eidx'
     )
-    results.concat_joint_accuracy = compute_accuracy(
+    results.concat_joint_accuracy, cja_correct_midxs = compute_accuracy(
             concat_results_data, metadata, pred_key='joint_pred_midx2eidx'
     )
 
-    results.embed_gold_clusters_recall = compute_gold_clusters_linking_recall(
+    results.embed_gold_clusters_recall, egcr_correct_midxs = compute_gold_clusters_recall(
             embed_results_data, metadata, wdoc_clusters
     )
-    results.concat_gold_clusters_recall = compute_gold_clusters_linking_recall(
+    results.concat_gold_clusters_recall, cgcr_correct_midxs = compute_gold_clusters_recall(
             concat_results_data, metadata, wdoc_clusters
     )
 
 
-    results.embed_gold_clusters_accuracy = compute_gold_clusters_linking_accuracy(
+    results.embed_gold_clusters_accuracy, egca_correct_midxs = compute_gold_clusters_accuracy(
             embed_results_data, metadata, knn_idxs, knn_X, wdoc_clusters
     )
-    results.concat_gold_clusters_accuracy = compute_gold_clusters_linking_accuracy(
+    results.concat_gold_clusters_accuracy, cgca_correct_midxs = compute_gold_clusters_accuracy(
             concat_results_data, metadata, knn_idxs, knn_X, wdoc_clusters
     )
 
-    results.embed_gold_clusters_accuracy_w_gt_entity = compute_gold_clusters_linking_accuracy(
+    results.embed_gold_clusters_accuracy_w_gt_entity, egca2_correct_midxs = compute_gold_clusters_accuracy(
             embed_results_data, metadata, knn_idxs, knn_X, wdoc_clusters, include_gold_eidxs=True
     )
-    #results.concat_gold_clusters_accuracy_w_gt_entity = compute_gold_clusters_linking_accuracy(
-    #        concat_results_data, metadata, knn_idxs, knn_X, wdoc_clusters, include_gold_eidxs=True
-    #)
-            
-
-    # TODO:
-    # - what is the (vanilla and joint) embed model getting right that the concat model is getting wrong
-    # - what is the (vanilla and joint) concat model getting right that the embed model is getting wrong
-    # - 
-    
 
     print('Done.')
 

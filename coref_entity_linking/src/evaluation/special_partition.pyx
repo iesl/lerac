@@ -45,7 +45,7 @@ def _has_entity_in_component(list stack,
     cdef INT_t index_size = col_wise_adj_index.shape[0]
     cdef set visited = set()
     cdef INT_t curr_node
-    
+
     while len(stack) > 0:
         # pop
         curr_node = stack[-1]
