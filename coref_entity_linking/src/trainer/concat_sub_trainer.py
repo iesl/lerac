@@ -34,7 +34,7 @@ class ConcatenationSubTrainer(object):
         else:
             raise ValueError('training method not implemented yet')
 
-    def _train_triplet(self, dataset_list):
+    def _train_triplet(self, dataset_list, metadata):
         args = self.args
 
         losses = [] 

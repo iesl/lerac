@@ -204,8 +204,12 @@ class ClusterLinkingTrainer(Trainer):
         concat_dataset_list = broadcast(concat_dataset_list, src=0)
 
         # train on datasets
-        embed_return_dict = self.embed_sub_trainer.train_on_subset(embed_dataset_list)
-        concat_return_dict = self.concat_sub_trainer.train_on_subset(concat_dataset_list)
+        embed_return_dict = self.embed_sub_trainer.train_on_subset(
+                embed_dataset_list, self.train_metadata
+        )
+        concat_return_dict = self.concat_sub_trainer.train_on_subset(
+                concat_dataset_list, self.train_metadata
+        )
 
         return_dict = {}
         return_dict.update(dataset_metrics)
@@ -251,21 +255,20 @@ class ClusterLinkingTrainer(Trainer):
                 else:
                     avail_neg_idxs = self.avail_entity_idxs + neg_midxs
 
-                # produce knn negatives for cluster and append to list
-                logger.warn('SAMPLING TERRRIBLE NEGATIVES THAT AREN\'T SORTED!!!!!')
-                negatives_list.append(
-                    self.train_knn_index.get_knn_limited_index(
-                            c_idxs, include_index_idxs=avail_neg_idxs
-                    )
+                # sample mention negatives
+                negs = self.train_knn_index.get_knn_limited_index(
+                    c_idxs, include_index_idxs=neg_midxs
                 )
+                # sample entity negatives
+                negs[1:,-args.k//2:] = self.train_knn_index.get_knn_limited_index(
+                    c_idxs[1:], include_index_idxs=neg_eidxs, k=args.k//2
+                )
+                negatives_list.append(negs)
+
             else:
+                raise NotImplementedError('xdoc neg sampling not implemented yet')
                 # produce knn negatives for cluster and append to list
-                logger.warn('SAMPLING TERRRIBLE NEGATIVES THAT AREN\'T SORTED!!!!!')
-                negatives_list.append(
-                    self.train_knn_index.get_knn_limited_index(
-                            c_idxs, exclude_index_idxs=c_idxs
-                    )
-                )
+
         negs = np.concatenate(negatives_list, axis=0)
         return negs
 
@@ -299,7 +302,17 @@ class ClusterLinkingTrainer(Trainer):
                 if get_rank() == 0:
                     try:
                         next_batch = next(data_iterator)
+
+                        # sort the rows of the batch
+                        t = zip(next_batch.row, next_batch.col, next_batch.data)
+                        sorted_t = sorted(t, key=lambda x : (x[0], x[2]))
+                        _r, _c, _d = zip(*sorted_t)
+                        next_batch = coo_matrix((_d, (_r, _c)),
+                                                shape=next_batch.shape)
+                        
+                        # choose negatives
                         negs = self._choose_negs(next_batch)
+
                         batch = (next_batch, negs)
                     except StopIteration:
                         batch = None
@@ -338,11 +351,15 @@ class ClusterLinkingTrainer(Trainer):
             # run full evaluation at the end of each epoch
             if args.evaluate_during_training:
                 if args.do_train_eval:
-                    train_eval_metrics = self.evaluate(split='train')
+                    train_eval_metrics = self.evaluate(
+                            split='train',
+                            suffix='checkpoint-{}'.format(global_step)
+                    )
                 if args.do_val:
-                    val_metrics = self.evaluate(split='val')
-
-
+                    val_metrics = self.evaluate(
+                            split='val',
+                            suffix='checkpoint-{}'.format(global_step)
+                    )
 
         logger.info('Training complete')
         if get_rank() == 0:
@@ -350,7 +367,7 @@ class ClusterLinkingTrainer(Trainer):
         synchronize()
         exit()
 
-    def evaluate(self, split=''):
+    def evaluate(self, split='', suffix=''):
         assert split in ['train', 'val', 'test']
         args = self.args
 
@@ -373,7 +390,7 @@ class ClusterLinkingTrainer(Trainer):
         knn_index.refresh_index()
 
         # save the knn index
-        knn_save_fname = os.path.join(args.output_dir,
+        knn_save_fname = os.path.join(args.output_dir, suffix,
                                       'knn_index.' + split + '.debug_results.pkl')
         with open(knn_save_fname, 'wb') as f:
             pickle.dump((knn_index.idxs, knn_index.X), f, pickle.HIGHEST_PROTOCOL)
@@ -383,16 +400,12 @@ class ClusterLinkingTrainer(Trainer):
         if args.clustering_domain == 'within_doc':
             embed_metrics = eval_wdoc(
                 args, example_dir, metadata, knn_index, self.embed_sub_trainer,
-                save_fname=os.path.join(args.output_dir,
+                save_fname=os.path.join(args.output_dir, suffix,
                                         'embed.' + split + '.debug_results.pkl')
             )
-            if get_rank() == 0:
-                embed()
-            synchronize()
-            exit()
             concat_metrics = eval_wdoc(
                 args, example_dir, metadata, knn_index, self.concat_sub_trainer,
-                save_fname=os.path.join(args.output_dir,
+                save_fname=os.path.join(args.output_dir, suffix,
                                         'concat.' + split + '.debug_results.pkl')
             )
         else:

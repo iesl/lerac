@@ -146,7 +146,7 @@ class EmbeddingSubTrainer(object):
         synchronize()
         return sparse_graph
 
-    def _train_triplet(self, dataset_list):
+    def _train_triplet(self, dataset_list, metadata):
         args = self.args
 
         losses = [] 
@@ -186,6 +186,7 @@ class EmbeddingSubTrainer(object):
                 #)
 
                 losses.append(loss.item())
+
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(

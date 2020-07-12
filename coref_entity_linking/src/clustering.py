@@ -126,8 +126,7 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 )
         )
 
-        dataset_metrics = {'mention_mention_triplets': mention_mention_triplets,
-                           'mention_entity_triplets': mention_entity_triplets}
+        dataset_metrics = {}
 
         return (embed_dataset_list, concat_dataset_list), dataset_metrics
 
@@ -182,6 +181,9 @@ class AllPairsCreator(PairsCreator):
                 if anchor < metadata.num_entities:
                     continue
                 pos = pos_edges[:, 1][pos_edges[:, 0] == anchor].tolist()
+
+                # this line removes positive entity from anchor's pos list
+                # if it doesn't appear in that mention's candidate set
                 pos = list(filter(lambda x : (x >= metadata.num_entities
                                         or x in metadata.midx2cand[anchor]),
                                   pos))
