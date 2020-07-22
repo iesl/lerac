@@ -165,19 +165,22 @@ class ClusterLinkingTrainer(Trainer):
             self.train_knn_index = NN_Index(
                     args,
                     self.embed_sub_trainer,
-                    self.train_eval_dataloader
+                    self.train_eval_dataloader,
+                    name='train'
             )
         elif split == 'val':
             self.val_knn_index = NN_Index(
                     args,
                     self.embed_sub_trainer,
-                    self.val_dataloader
+                    self.val_dataloader,
+                    name='val'
             )
         else:
             self.test_knn_index = NN_Index(
                     args,
                     self.embed_sub_trainer,
-                    self.test_dataloader
+                    self.test_dataloader,
+                    name='test'
             )
 
     def train_step(self, batch):
@@ -207,14 +210,23 @@ class ClusterLinkingTrainer(Trainer):
         embed_return_dict = self.embed_sub_trainer.train_on_subset(
                 embed_dataset_list, self.train_metadata
         )
+
         concat_return_dict = self.concat_sub_trainer.train_on_subset(
                 concat_dataset_list, self.train_metadata
         )
+
+        embed_return_dict = broadcast(embed_return_dict, src=0)
+        concat_return_dict = broadcast(concat_return_dict, src=0)
 
         return_dict = {}
         return_dict.update(dataset_metrics)
         return_dict.update(embed_return_dict)
         return_dict.update(concat_return_dict)
+
+        #if get_rank() == 0:
+        #    embed()
+        #synchronize()
+        #exit()
 
         return return_dict
 
@@ -227,6 +239,7 @@ class ClusterLinkingTrainer(Trainer):
         self.midx2doc = {}
         for doc_id, wdoc_clusters in metadata.wdoc_clusters.items():
             mentions = flatten(wdoc_clusters.values())
+            mentions = [x for x in mentions if x >= metadata.num_entities]
             self.doc2midxs[doc_id] = mentions
             for midx in mentions:
                 self.midx2doc[midx] = doc_id
@@ -238,31 +251,50 @@ class ClusterLinkingTrainer(Trainer):
     def _choose_negs(self, batch):
         args = self.args
         negatives_list = []
-        clusters = [batch.getrow(i).data.tolist()
+        clusters = [sorted(batch.getrow(i).data.tolist())
                         for i in range(batch.shape[0])]
         for c_idxs in clusters:
             if args.clustering_domain == 'within_doc':
                 # get mention idxs within document
-                doc_midxs = self.doc2midxs[self.midx2doc[c_idxs[0]]]
+                doc_midxs = self.doc2midxs[self.midx2doc[c_idxs[1]]]
 
-                # produce available negative idxs
+                # produce available negative mention idxs
                 neg_midxs = [m for m in doc_midxs if m not in c_idxs]
-                if args.available_entities in ['candidates_only', 'knn_candidates']:
-                    neg_eidxs = flatten([self.train_metadata.midx2cand.get(m, [])
-                                    for m in doc_midxs])
-                    neg_eidxs = [x for x in neg_eidxs if x not in c_idxs]
-                    avail_neg_idxs = neg_eidxs + neg_midxs
-                else:
-                    avail_neg_idxs = self.avail_entity_idxs + neg_midxs
+
+                # determine the number of mention negatives
+                num_m_negs = min(args.k // 2, len(neg_midxs))
+
+                # initialize the negs tensors
+                negs = np.tile(-1, (len(c_idxs), args.k))
 
                 # sample mention negatives
-                negs = self.train_knn_index.get_knn_limited_index(
-                    c_idxs, include_index_idxs=neg_midxs
+                negs[:,:num_m_negs] = self.train_knn_index.get_knn_limited_index(
+                    c_idxs,
+                    include_index_idxs=neg_midxs,
+                    k=num_m_negs
                 )
-                # sample entity negatives
-                negs[1:,-args.k//2:] = self.train_knn_index.get_knn_limited_index(
-                    c_idxs[1:], include_index_idxs=neg_eidxs, k=args.k//2
-                )
+
+                # produce available negative entity idxs
+                num_e_negs = args.k - num_m_negs
+                if args.available_entities == 'candidates_only':
+                    neg_eidxs = [
+                        self.train_metadata.midx2cand.get(i, [])[:num_e_negs]
+                            for i in c_idxs
+                                if i >= self.train_metadata.num_entities
+                    ]
+                    neg_eidxs = [
+                        l + [-1] * (num_e_negs - len(l))
+                            for l in neg_eidxs
+                    ]
+                    negs[1:, -num_e_negs:] = np.asarray(neg_eidxs)
+                else:
+                    _entity_knn_negs = self.train_knn_index.get_knn_limited_index(
+                            c_idxs[1:],
+                            include_index_idxs=self.avail_entity_idxs,
+                            k=num_e_negs
+                    )
+                    negs[1:, -num_e_negs:] = _entity_knn_negs
+
                 negatives_list.append(negs)
 
             else:
@@ -278,6 +310,8 @@ class ClusterLinkingTrainer(Trainer):
         # set up data structures for choosing available negatives on-the-fly
         if args.clustering_domain == 'within_doc':
             self._neg_choosing_prep()
+        else:
+            raise NotImplementedError('xdoc not implemented yet')
 
         global_step = 0
         log_return_dicts = []
@@ -285,6 +319,7 @@ class ClusterLinkingTrainer(Trainer):
         # FIXME: this only does one epoch as of now
         logger.info('Starting training...')
 
+        batch = None
         for epoch in range(args.num_train_epochs):
             logger.info('********** [START] epoch: {} **********'.format(epoch))
             
@@ -294,7 +329,8 @@ class ClusterLinkingTrainer(Trainer):
                 num_batches = len(data_iterator)
             num_batches = broadcast(num_batches, src=0)
 
-            batch = None
+            logger.info('num_batches: {}'.format(num_batches))
+
             for _ in trange(num_batches,
                             desc='Epoch: {} - Batches'.format(epoch),
                             disable=(get_rank() != 0 or args.disable_logging)):
@@ -302,21 +338,13 @@ class ClusterLinkingTrainer(Trainer):
                 if get_rank() == 0:
                     try:
                         next_batch = next(data_iterator)
-
-                        # sort the rows of the batch
-                        t = zip(next_batch.row, next_batch.col, next_batch.data)
-                        sorted_t = sorted(t, key=lambda x : (x[0], x[2]))
-                        _r, _c, _d = zip(*sorted_t)
-                        next_batch = coo_matrix((_d, (_r, _c)),
-                                                shape=next_batch.shape)
-                        
-                        # choose negatives
                         negs = self._choose_negs(next_batch)
-
                         batch = (next_batch, negs)
                     except StopIteration:
                         batch = None
+
                 batch = broadcast(batch, src=0)
+                
                 if batch is None:
                     break
 
@@ -390,10 +418,11 @@ class ClusterLinkingTrainer(Trainer):
         knn_index.refresh_index()
 
         # save the knn index
-        knn_save_fname = os.path.join(args.output_dir, suffix,
-                                      'knn_index.' + split + '.debug_results.pkl')
-        with open(knn_save_fname, 'wb') as f:
-            pickle.dump((knn_index.idxs, knn_index.X), f, pickle.HIGHEST_PROTOCOL)
+        if get_rank() == 0:
+            knn_save_fname = os.path.join(args.output_dir, suffix,
+                                          'knn_index.' + split + '.debug_results.pkl')
+            with open(knn_save_fname, 'wb') as f:
+                pickle.dump((knn_index.idxs, knn_index.X), f, pickle.HIGHEST_PROTOCOL)
 
         embed_metrics = None
         concat_metrics = None
@@ -403,11 +432,12 @@ class ClusterLinkingTrainer(Trainer):
                 save_fname=os.path.join(args.output_dir, suffix,
                                         'embed.' + split + '.debug_results.pkl')
             )
-            concat_metrics = eval_wdoc(
-                args, example_dir, metadata, knn_index, self.concat_sub_trainer,
-                save_fname=os.path.join(args.output_dir, suffix,
-                                        'concat.' + split + '.debug_results.pkl')
-            )
+            #concat_metrics = eval_wdoc(
+            #    args, example_dir, metadata, knn_index, self.concat_sub_trainer,
+            #    save_fname=os.path.join(args.output_dir, suffix,
+            #                            'concat.' + split + '.debug_results.pkl')
+            #)
+            concat_metrics = {}
         else:
             # FIXME: update after we finalize wdoc changes
             embed_metrics = eval_xdoc(

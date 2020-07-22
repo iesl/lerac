@@ -40,6 +40,10 @@ class ConcatenationSubTrainer(object):
         losses = [] 
         time_per_dataset = []
         dataset_sizes = []
+        pos_m_neg_m_losses = []
+        pos_m_neg_e_losses = []
+        pos_e_neg_m_losses = []
+        pos_e_neg_e_losses = []
 
         self.model.train()
         self.model.zero_grad()
@@ -56,20 +60,33 @@ class ConcatenationSubTrainer(object):
                 outputs = self.model(**inputs)
                 scores = torch.mean(outputs, -1)
 
-                loss = torch.mean(
-                    F.relu(
-                        scores[:,1]
-                        - scores[:,0]
+                # max-margin
+                per_triplet_loss = F.relu(
+                        scores[:, 1]   # negative dot products
+                        - scores[:, 0] # positive dot products
                         + args.margin
-                    )
                 )
-                #loss = torch.mean(
-                #    torch.sigmoid(
-                #        scores[:, 1]
-                #        - scores[:, 0]
-                #    )
+                # BPR
+                #per_triplet_loss = torch.sigmoid(
+                #        scores[:, 1]   # negative dot products
+                #        - scores[:, 0] # positive dot products
+                #        + args.margin
                 #)
-                losses.append(loss.item())
+
+                # record triplet specific losses
+                _detached_per_triplet_loss = per_triplet_loss.clone().detach().cpu()
+
+                _mask = batch[0] < metadata.num_entities
+                pos_m_neg_m_mask = ~_mask[:, 0, 0, 1] & ~_mask[:, 1, 0, 1]
+                pos_m_neg_e_mask = ~_mask[:, 0, 0, 1] & _mask[:, 1, 0, 1]
+                pos_e_neg_m_mask = _mask[:, 0, 0, 1] & ~_mask[:, 1, 0, 1]
+                pos_e_neg_e_mask = _mask[:, 0, 0, 1] & _mask[:, 1, 0, 1]
+
+                pos_m_neg_m_losses.extend(_detached_per_triplet_loss[pos_m_neg_m_mask].numpy().tolist())
+                pos_m_neg_e_losses.extend(_detached_per_triplet_loss[pos_m_neg_e_mask].numpy().tolist())
+                pos_e_neg_m_losses.extend(_detached_per_triplet_loss[pos_e_neg_m_mask].numpy().tolist())
+                pos_e_neg_e_losses.extend(_detached_per_triplet_loss[pos_e_neg_e_mask].numpy().tolist())
+                loss = torch.mean(per_triplet_loss)
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(
@@ -81,11 +98,42 @@ class ConcatenationSubTrainer(object):
                 self.model.zero_grad()
             time_per_dataset.append(time.time() - _dataset_start_time)
 
-        total_time = sum(time_per_dataset)
-        total_num_examples = 4 * sum(dataset_sizes) # because triplets
-        return {'concat_loss' : np.mean(losses),
-                'concat_time_per_example': total_time / total_num_examples,
-                'concat_num_examples': total_num_examples}
+        gathered_data = all_gather({
+                'pos_m_neg_m_losses' : pos_m_neg_m_losses,
+                'pos_m_neg_e_losses' : pos_m_neg_e_losses,
+                'pos_e_neg_m_losses' : pos_e_neg_m_losses,
+                'pos_e_neg_e_losses' : pos_e_neg_e_losses
+        })
+
+        if get_rank() == 0:
+            pos_m_neg_m_losses = flatten([d['pos_m_neg_m_losses'] for d in gathered_data])
+            pos_m_neg_e_losses = flatten([d['pos_m_neg_e_losses'] for d in gathered_data])
+            pos_e_neg_m_losses = flatten([d['pos_e_neg_m_losses'] for d in gathered_data])
+            pos_e_neg_e_losses = flatten([d['pos_e_neg_e_losses'] for d in gathered_data])
+            losses = pos_m_neg_m_losses + pos_m_neg_e_losses + pos_e_neg_m_losses + pos_e_neg_e_losses
+
+            pos_m_neg_m_loss = 0.0 if len(pos_m_neg_m_losses) == 0 else np.mean(pos_m_neg_m_losses)
+            pos_m_neg_e_loss = 0.0 if len(pos_m_neg_e_losses) == 0 else np.mean(pos_m_neg_e_losses)
+            pos_e_neg_m_loss = 0.0 if len(pos_e_neg_m_losses) == 0 else np.mean(pos_e_neg_m_losses)
+            pos_e_neg_e_loss = 0.0 if len(pos_e_neg_e_losses) == 0 else np.mean(pos_e_neg_e_losses)
+            loss = np.mean(losses)
+
+            synchronize()
+            return {
+                    'concat_loss' : loss,
+                    'concat_num_examples': len(losses),
+                    'concat_pos_m_neg_m_loss' : pos_m_neg_m_loss,
+                    'concat_pos_m_neg_e_loss' : pos_m_neg_e_loss,
+                    'concat_pos_e_neg_m_loss' : pos_e_neg_m_loss,
+                    'concat_pos_e_neg_e_loss' : pos_e_neg_e_loss,
+                    'concat_pos_m_neg_m_num_examples' : len(pos_m_neg_m_losses),
+                    'concat_pos_m_neg_e_num_examples' : len(pos_m_neg_e_losses),
+                    'concat_pos_e_neg_m_num_examples' : len(pos_e_neg_m_losses),
+                    'concat_pos_e_neg_e_num_examples' : len(pos_e_neg_e_losses)
+            }
+        else:
+            synchronize()
+            return None
 
     def get_edge_affinities(self, edges, example_dir, knn_index):
         args = self.args

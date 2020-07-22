@@ -12,13 +12,10 @@ from IPython import embed
 
 EXTERNAL_BASE_DIR=('/home/ds-share/data2/users/rangell/lerac/coref_entity_linking/'
                    'experiments/mm_st21pv_long_entities/cluster_linking')
-EXP_ID='exp4'
-CKPT_ID='checkpoint-7442' # will need this for later - right now pickle files saved in main folder not checkpoint folder
+EXP_ID='exp6'
+CKPT_ID='checkpoint-11163' 
 
 # TODO:
-# - load pickle files from eval
-# - load dataset metadata pytorch serialized file
-# - change main codebase to also save knn_index???
 # - 
 
 def load_pickle_file(fname):
@@ -112,11 +109,11 @@ def compute_gold_clusters_accuracy(results_data,
                 )
                 if (midx not in pred_midx2eidx_w_scores.keys()
                         or eidx_score > pred_midx2eidx_w_scores[midx][1]):
-                    try:
-                        assert eidx not in metadata.midx2cand[midx]
-                    except:
-                        embed()
-                        exit()
+                    #try:
+                    #    assert eidx not in metadata.midx2cand[midx]
+                    #except:
+                    #    embed()
+                    #    exit()
                     pred_midx2eidx_w_scores[midx] = (eidx, eidx_score)
                     added_gold_eidxs += 1
 
@@ -177,6 +174,9 @@ def list_diff(list_a, list_b):
             
 
 if __name__ == '__main__':
+
+    print('Debugging experiment: {}, checkpoint: {}'.format(EXP_ID, CKPT_ID))
+
     print('Loading data...')
     metadata, knn_index_tuple, embed_results_data, concat_results_data = load_data_files()
     print('Done.')

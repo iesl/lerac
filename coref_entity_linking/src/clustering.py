@@ -56,46 +56,15 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 pos_list = joint_collection['pos']
                 neg_list = joint_collection['neg']
 
-                #pos_m_e_list = [x for x in pos_list if x < num_entities]
-                #neg_m_e_list = [x for x in neg_list if x < num_entities]
-                #pos_m_m_list = [x for x in pos_list if x >= num_entities]
-                #neg_m_m_list = [x for x in neg_list if x >= num_entities]
-
-                #shuffle(pos_m_e_list)
-                #shuffle(neg_m_e_list)
-                #shuffle(pos_m_m_list)
-                #shuffle(neg_m_m_list)
-
-                #min_m_e_len = 4*min(len(pos_m_e_list), len(neg_m_e_list))
-                #while len(pos_m_e_list) < min_m_e_len:
-                #    pos_m_e_list.extend(pos_m_e_list)
-                #while len(neg_m_e_list) < min_m_e_len:
-                #    neg_m_e_list.extend(neg_m_e_list)
-                #pos_m_e_list = pos_m_e_list[:min_m_e_len]
-                #neg_m_e_list = neg_m_e_list[:min_m_e_len]
-
-                #min_m_m_len = min(len(pos_m_m_list), len(neg_m_m_list))
-                #while len(pos_m_m_list) < min_m_m_len:
-                #    pos_m_m_list.extend(pos_m_m_list)
-                #while len(neg_m_m_list) < min_m_m_len:
-                #    neg_m_m_list.extend(neg_m_m_list)
-                #pos_m_m_list = pos_m_m_list[:min_m_m_len]
-                #neg_m_m_list = neg_m_m_list[:min_m_m_len]
-
-                #mention_entity_triplets += len(pos_m_e_list)
-                #mention_mention_triplets += len(pos_m_m_list)
-
-                #pos_list = pos_m_e_list + pos_m_m_list
-                #neg_list = neg_m_e_list + neg_m_m_list
-
-                # filter pos
+                if len(pos_list) == 0 or len(neg_list) == 0:
+                    continue
 
                 # actuall all pairs implementation
-                desired_num_pairs = min(
-                        max(len(pos_list), len(neg_list)),
-                        5*min(len(pos_list), len(neg_list))
-                )
-                desired_num_pairs = min(len(pos_list), len(neg_list))
+                #desired_num_pairs = min(
+                #        max(len(pos_list), len(neg_list)),
+                #        5*min(len(pos_list), len(neg_list))
+                #)
+                desired_num_pairs = max(len(pos_list), len(neg_list))
                 while len(pos_list) < desired_num_pairs:
                     pos_list.extend(pos_list)
                 while len(neg_list) < desired_num_pairs:
@@ -163,10 +132,14 @@ class AllPairsCreator(PairsCreator):
         all_edges = np.vstack((sparse_graph.row, sparse_graph.col))
 
         # get the positive and negative edges
-        idx2cluster = {a : b for a, b in zip(_data, _row)}
-        v_idx2cluster = np.vectorize(lambda x : idx2cluster.get(x, -1))
-        all_cluster_assignments = v_idx2cluster(all_edges)
-        pos_mask = (all_cluster_assignments[0] == all_cluster_assignments[1])
+        local_pos_a, local_pos_b = np.where(
+                np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
+        )
+        pos_a = _data[local_pos_a]
+        pos_b = _data[local_pos_b]
+        _pos_edges = np.vstack((pos_a, pos_b)).T.tolist()
+
+        pos_mask = np.asarray([x in _pos_edges for x in all_edges.T.tolist()])
         neg_mask = ~pos_mask
         pos_edges = all_edges[:, pos_mask]
         pos_edges = np.concatenate((pos_edges, pos_edges[[1, 0]]), axis=1).T
@@ -184,10 +157,20 @@ class AllPairsCreator(PairsCreator):
 
                 # this line removes positive entity from anchor's pos list
                 # if it doesn't appear in that mention's candidate set
-                pos = list(filter(lambda x : (x >= metadata.num_entities
-                                        or x in metadata.midx2cand[anchor]),
-                                  pos))
+                # NOTE: this is too harsh
+                #pos = list(filter(lambda x : (x >= metadata.num_entities
+                #                        or x in metadata.midx2cand[anchor]),
+                #                  pos))
+
                 neg = neg_edges[:, 1][neg_edges[:, 0] == anchor].tolist()
+                neg = list(filter(lambda x : x >= 0, neg))
+
+                # only use mention-entity links
+                pos = list(filter(lambda x : x < metadata.num_entities, pos))
+                neg = list(filter(lambda x : x < metadata.num_entities, neg))
+
+                assert metadata.midx2eidx[anchor] in pos
+
                 cluster_pairs_collection.append(
                     {
                         'anchor' : anchor,
@@ -196,6 +179,7 @@ class AllPairsCreator(PairsCreator):
                     }
                 )
             pairs_collection.append(cluster_pairs_collection)
+
 
         return pairs_collection
     

@@ -100,6 +100,7 @@ class EmbeddingSubTrainer(object):
         examples = clusters_mx.data.tolist()
         examples.extend(flatten(per_example_negs.tolist()))
         examples = unique(examples)
+        examples = list(filter(lambda x : x >= 0, examples))
 
         # create dataset and dataloader
         dataset = InferenceEmbeddingDataset(
@@ -120,8 +121,8 @@ class EmbeddingSubTrainer(object):
             local_pos_a, local_pos_b = np.where(
                     np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
             )
-            a = clusters_mx.data[local_pos_a]
-            b = clusters_mx.data[local_pos_b]
+            pos_a = clusters_mx.data[local_pos_a]
+            pos_b = clusters_mx.data[local_pos_b]
             # negatives:
             local_neg_a = np.tile(
                 np.arange(per_example_negs.shape[0])[:, np.newaxis],
@@ -130,12 +131,17 @@ class EmbeddingSubTrainer(object):
             neg_a = clusters_mx.data[local_neg_a]
             neg_b = per_example_negs.flatten()
 
+            neg_mask = (neg_b != -1)
+            neg_a = neg_a[neg_mask]
+            neg_b = neg_b[neg_mask]
+
             # create subset of the sparse graph we care about
-            a = np.concatenate((a, neg_a), axis=0)
-            b = np.concatenate((b, neg_b), axis=0)
+            a = np.concatenate((pos_a, neg_a), axis=0)
+            b = np.concatenate((pos_b, neg_b), axis=0)
             edges = list(zip(a, b))
             affinities = [np.dot(embeds[inverse_idxs[i]],
                                  embeds[inverse_idxs[j]]) for i, j in edges]
+
             # convert to coo_matrix
             edges = np.asarray(edges).T
             affinities = np.asarray(affinities)
@@ -152,6 +158,10 @@ class EmbeddingSubTrainer(object):
         losses = [] 
         time_per_dataset = []
         dataset_sizes = []
+        pos_m_neg_m_losses = []
+        pos_m_neg_e_losses = []
+        pos_e_neg_m_losses = []
+        pos_e_neg_e_losses = []
 
         self.model.train()
         self.model.zero_grad()
@@ -171,22 +181,33 @@ class EmbeddingSubTrainer(object):
                         outputs[:,0:1,:] * outputs[:,1:,:],
                         dim=-1
                 )
-                loss = torch.mean(
-                    F.relu(
+
+                # max-margin
+                per_triplet_loss = F.relu(
                         pos_neg_dot_prods[:, 1]   # negative dot products
                         - pos_neg_dot_prods[:, 0] # positive dot products
                         + args.margin
-                    )
                 )
-                #loss = torch.mean(
-                #    torch.sigmoid(
+                # BPR
+                #per_triplet_loss = torch.sigmoid(
                 #        pos_neg_dot_prods[:, 1]   # negative dot products
                 #        - pos_neg_dot_prods[:, 0] # positive dot products
-                #    )
+                #        + args.margin
                 #)
 
-                losses.append(loss.item())
+                # record triplet specific losses
+                _detached_per_triplet_loss = per_triplet_loss.clone().detach().cpu()
+                _mask = batch[0] < metadata.num_entities
+                pos_m_neg_m_mask = ~_mask[:, 1] & ~_mask[:, 2]
+                pos_m_neg_e_mask = ~_mask[:, 1] & _mask[:, 2]
+                pos_e_neg_m_mask = _mask[:, 1] & ~_mask[:, 2]
+                pos_e_neg_e_mask = _mask[:, 1] & _mask[:, 2]
 
+                pos_m_neg_m_losses.extend(_detached_per_triplet_loss[pos_m_neg_m_mask].numpy().tolist())
+                pos_m_neg_e_losses.extend(_detached_per_triplet_loss[pos_m_neg_e_mask].numpy().tolist())
+                pos_e_neg_m_losses.extend(_detached_per_triplet_loss[pos_e_neg_m_mask].numpy().tolist())
+                pos_e_neg_e_losses.extend(_detached_per_triplet_loss[pos_e_neg_e_mask].numpy().tolist())
+                loss = torch.mean(per_triplet_loss)
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(
@@ -196,13 +217,47 @@ class EmbeddingSubTrainer(object):
                 self.optimizer.step()
                 self.scheduler.step()
                 self.model.zero_grad()
+
             time_per_dataset.append(time.time() - _dataset_start_time)
 
-        total_time = sum(time_per_dataset)
-        total_num_examples = 3 * sum(dataset_sizes) # because triplets
-        return {'embed_loss' : np.mean(losses),
-                'embed_time_per_example': total_time / total_num_examples,
-                'embed_num_examples': total_num_examples}
+        gathered_data = all_gather({
+                'pos_m_neg_m_losses' : pos_m_neg_m_losses,
+                'pos_m_neg_e_losses' : pos_m_neg_e_losses,
+                'pos_e_neg_m_losses' : pos_e_neg_m_losses,
+                'pos_e_neg_e_losses' : pos_e_neg_e_losses
+        })
+
+        if get_rank() == 0:
+            pos_m_neg_m_losses = flatten([d['pos_m_neg_m_losses'] for d in gathered_data])
+            pos_m_neg_e_losses = flatten([d['pos_m_neg_e_losses'] for d in gathered_data])
+            pos_e_neg_m_losses = flatten([d['pos_e_neg_m_losses'] for d in gathered_data])
+            pos_e_neg_e_losses = flatten([d['pos_e_neg_e_losses'] for d in gathered_data])
+            losses = pos_m_neg_m_losses + pos_m_neg_e_losses + pos_e_neg_m_losses + pos_e_neg_e_losses
+
+            pos_m_neg_m_loss = 0.0 if len(pos_m_neg_m_losses) == 0 else np.mean(pos_m_neg_m_losses)
+            pos_m_neg_e_loss = 0.0 if len(pos_m_neg_e_losses) == 0 else np.mean(pos_m_neg_e_losses)
+            pos_e_neg_m_loss = 0.0 if len(pos_e_neg_m_losses) == 0 else np.mean(pos_e_neg_m_losses)
+            pos_e_neg_e_loss = 0.0 if len(pos_e_neg_e_losses) == 0 else np.mean(pos_e_neg_e_losses)
+            loss = np.mean(losses)
+
+            synchronize()
+            return {
+                    'embed_loss' : loss,
+                    'embed_num_examples': len(losses),
+                    'embed_pos_m_neg_m_loss' : pos_m_neg_m_loss,
+                    'embed_pos_m_neg_e_loss' : pos_m_neg_e_loss,
+                    'embed_pos_e_neg_m_loss' : pos_e_neg_m_loss,
+                    'embed_pos_e_neg_e_loss' : pos_e_neg_e_loss,
+                    'embed_pos_m_neg_m_num_examples' : len(pos_m_neg_m_losses),
+                    'embed_pos_m_neg_e_num_examples' : len(pos_m_neg_e_losses),
+                    'embed_pos_e_neg_m_num_examples' : len(pos_e_neg_m_losses),
+                    'embed_pos_e_neg_e_num_examples' : len(pos_e_neg_e_losses)
+            }
+        else:
+            synchronize()
+            return None
+
+
 
     def _train_sigmoid(self, dataset_list):
         pass
