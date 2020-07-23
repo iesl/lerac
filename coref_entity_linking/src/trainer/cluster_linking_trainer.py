@@ -28,6 +28,9 @@ from utils.comm import (all_gather,
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
 from utils.misc import flatten, unique, dict_merge_with
 
+if get_rank() == 0:
+    import wandb
+
 from IPython import embed
 
 
@@ -361,6 +364,8 @@ class ClusterLinkingTrainer(Trainer):
                 # logging stuff for babysitting
                 if global_step % args.logging_steps == 0:
                     avg_return_dict = reduce(dict_merge_with, log_return_dicts)
+                    if get_rank() == 0:
+                        wandb.log(avg_return_dict, step=global_step)
                     for stat_name, stat_value in avg_return_dict.items():
                         logger.info('Average %s: %s at global step: %s',
                                 stat_name,
@@ -389,11 +394,15 @@ class ClusterLinkingTrainer(Trainer):
                             split='train',
                             suffix='checkpoint-{}'.format(global_step)
                     )
+                    if get_rank() == 0:
+                        wandb.log(avg_return_dict, step=global_step)
                 if args.do_val:
                     val_metrics = self.evaluate(
                             split='val',
                             suffix='checkpoint-{}'.format(global_step)
                     )
+                    if get_rank() == 0:
+                        wandb.log(avg_return_dict, step=global_step)
 
         logger.info('Training complete')
         if get_rank() == 0:
@@ -462,6 +471,7 @@ class ClusterLinkingTrainer(Trainer):
         metrics = {}
         metrics.update(embed_metrics)
         metrics.update(concat_metrics)
+        metrics = {split + '_' + k : v for k, v in metrics.items()}
 
         logger.info(metrics)
         logger.info('********** [END] eval: {} **********'.format(split))

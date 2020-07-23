@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
+import git
 import glob
 import logging
 import os
@@ -54,6 +55,7 @@ from trainer.trainer import (MentionClusteringTrainer,
                              VanillaLinkingTrainer,
                              XDocClusterLinkingTrainer)
 from trainer.cluster_linking_trainer import ClusterLinkingTrainer
+from utils.comm import get_rank
 from utils.misc import initialize_exp
 
 logger = logging.getLogger(__name__)
@@ -234,6 +236,13 @@ def get_args():
 def main():
 
     args = get_args()
+
+    repo = git.Repo(search_parent_directories=True)
+    args.git_hash = repo.head.object.hexsha
+    
+    if get_rank() == 0:
+        import wandb
+        wandb.init(project="coref_entity_linking", config=args)
 
     # set logger filename
     if args.do_train:
