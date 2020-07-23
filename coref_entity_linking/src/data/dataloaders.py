@@ -83,6 +83,32 @@ class TripletConcatenationDataLoader(DataLoader):
                 pin_memory=True,
         )
 
+class SoftmaxEmbeddingDataLoader(DataLoader):
+    """
+    Custom DataLoader for SoftmaxEmbeddingDataset.
+    """
+    def __init__(self, args, dataset):
+        super(SoftmaxEmbeddingDataLoader, self).__init__(
+                dataset,
+                sampler=_custom_distributed_sampler(dataset),
+                batch_size=2,
+                num_workers=args.num_dataloader_workers,
+                pin_memory=True,
+        )
+
+class SoftmaxConcatenationDataLoader(DataLoader):
+    """
+    Custom DataLoader for SoftmaxConcatenationDataset.
+    """
+    def __init__(self, args, dataset):
+        super(SoftmaxConcatenationDataLoader, self).__init__(
+                dataset,
+                sampler=_custom_distributed_sampler(dataset),
+                batch_size=1,
+                num_workers=args.num_dataloader_workers,
+                pin_memory=True,
+        )
+
 
 class PairsConcatenationDataLoader(DataLoader):
     """

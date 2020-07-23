@@ -3,12 +3,14 @@ import numpy as np
 from scipy.sparse import coo_matrix
 import time
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
 from data.datasets import InferenceEmbeddingDataset
 from data.dataloaders import (InferenceEmbeddingDataLoader,
-                              TripletEmbeddingDataLoader)
+                              TripletEmbeddingDataLoader,
+                              SoftmaxEmbeddingDataLoader)
 from utils.comm import get_rank, all_gather, synchronize
 from utils.misc import flatten, unique
 
@@ -28,10 +30,6 @@ class EmbeddingSubTrainer(object):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
-        if args.training_method == 'triplet':
-            self.train_on_subset = self._train_triplet
-        else:
-            raise ValueError('training method not implemented yet')
 
     def get_embeddings(self, dataloader, evaluate=True):
         args = self.args
@@ -152,6 +150,17 @@ class EmbeddingSubTrainer(object):
         synchronize()
         return sparse_graph
 
+
+    def train_on_subset(self, dataset_list, metadata):
+        args = self.args
+        if args.training_method == 'triplet':
+            return self._train_triplet(dataset_list, metadata)
+        elif args.training_method == 'softmax':
+            return self._train_softmax(dataset_list, metadata)
+        else:
+            raise ValueError('training method not implemented yet')
+
+
     def _train_triplet(self, dataset_list, metadata):
         args = self.args
 
@@ -165,6 +174,7 @@ class EmbeddingSubTrainer(object):
 
         self.model.train()
         self.model.zero_grad()
+
         for dataset in dataset_list:
             _dataset_start_time = time.time()
             dataset_sizes.append(len(dataset))
@@ -210,13 +220,13 @@ class EmbeddingSubTrainer(object):
                 loss = torch.mean(per_triplet_loss)
                 loss.backward()
 
-                torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(),
-                        args.max_grad_norm
-                )
-                self.optimizer.step()
-                self.scheduler.step()
-                self.model.zero_grad()
+            torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    args.max_grad_norm
+            )
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
 
             time_per_dataset.append(time.time() - _dataset_start_time)
 
@@ -257,15 +267,63 @@ class EmbeddingSubTrainer(object):
             synchronize()
             return None
 
-
-
-    def _train_sigmoid(self, dataset_list):
+    def _train_sigmoid(self, dataset_list, metadata):
         pass
     
-    def _train_softmax(self, dataset_list):
-        pass
+    def _train_softmax(self, dataset_list, metadata):
+        args = self.args
 
-    def _train_accum_max_margin(self, dataset_list):
+        losses = [] 
+        time_per_dataset = []
+        dataset_sizes = []
+
+        self.model.train()
+        self.model.zero_grad()
+        criterion = nn.CrossEntropyLoss()
+        for dataset in dataset_list:
+            _dataset_start_time = time.time()
+            dataset_sizes.append(len(dataset))
+            dataloader = SoftmaxEmbeddingDataLoader(args, dataset)
+            for batch in dataloader:
+                batch = tuple(t.to(args.device) for t in batch)
+                inputs = {'input_ids':      batch[1],
+                          'attention_mask': batch[2],
+                          'token_type_ids': batch[3],
+                          'concat_input': False}
+                outputs = self.model(**inputs)
+                pos_neg_dot_prods = torch.sum(
+                        outputs[:,0:1,:] * outputs[:,1:,:],
+                        dim=-1
+                )
+                target = torch.zeros(pos_neg_dot_prods.shape[0], dtype=torch.long).cuda()
+                loss = criterion(pos_neg_dot_prods, target)
+                losses.append(loss.item())
+                loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    args.max_grad_norm
+            )
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
+            time_per_dataset.append(time.time() - _dataset_start_time)
+
+        gathered_data = all_gather({
+                'losses' : losses,
+        })
+
+        if get_rank() == 0:
+            losses = flatten([d['losses'] for d in gathered_data])
+            loss = np.mean(losses)
+
+            synchronize()
+            return { 'embed_loss' : loss }
+        else:
+            synchronize()
+            return None
+
+    def _train_accum_max_margin(self, dataset_list, metadata):
         pass
 
     def get_edge_affinities(self, edges, example_dir, knn_index):

@@ -5,7 +5,9 @@ import numpy as np
 from scipy.sparse.csgraph import minimum_spanning_tree, connected_components
 from random import shuffle
 
-from data.datasets import (TripletEmbeddingDataset,
+from data.datasets import (SoftmaxEmbeddingDataset,
+                           SoftmaxConcatenationDataset,
+                           TripletEmbeddingDataset,
                            TripletConcatenationDataset)
 from utils.comm import get_rank, synchronize
 
@@ -59,11 +61,6 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 if len(pos_list) == 0 or len(neg_list) == 0:
                     continue
 
-                # actuall all pairs implementation
-                #desired_num_pairs = min(
-                #        max(len(pos_list), len(neg_list)),
-                #        5*min(len(pos_list), len(neg_list))
-                #)
                 desired_num_pairs = max(len(pos_list), len(neg_list))
                 while len(pos_list) < desired_num_pairs:
                     pos_list.extend(pos_list)
@@ -105,7 +102,72 @@ class SigmoidDatasetBuilder(SupervisedClusteringDatasetBuilder):
 
 
 class SoftmaxDatasetBuilder(SupervisedClusteringDatasetBuilder):
-    pass
+
+    def __init__(self, args):
+        super(SoftmaxDatasetBuilder, self).__init__(args)
+    
+    def __call__(self, clusters_mx, sparse_graph, metadata):
+        args = self.args
+
+        # get pairs_collection
+        pairs_collection = self.pairs_creator(
+                clusters_mx, sparse_graph, metadata
+        )
+
+        # build datasets
+        mention_entity_triplets = 0
+        mention_mention_triplets = 0
+        embed_dataset_list = []
+        concat_dataset_list = []
+        examples = []
+        for cluster_pairs_list in pairs_collection:
+            for joint_collection in cluster_pairs_list:
+                anchor = joint_collection['anchor']
+                pos_list = joint_collection['pos']
+                neg_list = joint_collection['neg']
+
+                if len(pos_list) == 0 or len(neg_list) == 0:
+                    continue
+
+                num_negs = (args.per_gpu_train_batch_size // 2) - 1
+                desired_num_examples = max(len(pos_list),
+                                           math.ceil(len(neg_list) / num_negs))
+                while len(pos_list) < desired_num_examples:
+                    pos_list.extend(pos_list)
+                while len(neg_list) // num_negs < desired_num_examples:
+                    neg_list.extend(neg_list)
+                pos_list = pos_list[:desired_num_examples]
+                neg_list = neg_list[:num_negs*desired_num_examples]
+
+                shuffle(pos_list)
+                shuffle(neg_list)
+
+                for i in range(desired_num_examples):
+                    examples.append([anchor,
+                                     pos_list[i],
+                                     *neg_list[i*num_negs:(i+1)*num_negs]])
+
+        # append one big dataset
+        embed_dataset_list.append(
+                SoftmaxEmbeddingDataset(
+                    args,
+                    examples,
+                    args.train_cache_dir
+                )
+        )
+
+        # append one big dataset
+        concat_dataset_list.append(
+                SoftmaxConcatenationDataset(
+                    args,
+                    examples,
+                    args.train_cache_dir
+                )
+        )
+
+        dataset_metrics = {}
+
+        return (embed_dataset_list, concat_dataset_list), dataset_metrics
 
 
 class AccumMaxMarginDatasetBuilder(SupervisedClusteringDatasetBuilder):
@@ -122,6 +184,8 @@ class PairsCreator(ABC):
 class AllPairsCreator(PairsCreator):
     """ Create all pairs collection. """
     def __call__(self, clusters_mx, sparse_graph, metadata):
+        args = self.args
+        
         # FIXME: this is kinda slow, maybe fix with Cython??
         # check to make sure this is true
         _row = clusters_mx.row
@@ -157,7 +221,7 @@ class AllPairsCreator(PairsCreator):
 
                 # this line removes positive entity from anchor's pos list
                 # if it doesn't appear in that mention's candidate set
-                # NOTE: this is too harsh
+                # NOTE: this might be too harsh
                 #pos = list(filter(lambda x : (x >= metadata.num_entities
                 #                        or x in metadata.midx2cand[anchor]),
                 #                  pos))
@@ -165,9 +229,16 @@ class AllPairsCreator(PairsCreator):
                 neg = neg_edges[:, 1][neg_edges[:, 0] == anchor].tolist()
                 neg = list(filter(lambda x : x >= 0, neg))
 
-                # only use mention-entity links
-                pos = list(filter(lambda x : x < metadata.num_entities, pos))
-                neg = list(filter(lambda x : x < metadata.num_entities, neg))
+                if args.training_edges_considered == 'm-e':
+                    # only use mention-entity links
+                    pos = list(filter(lambda x : x < metadata.num_entities, pos))
+                    neg = list(filter(lambda x : x < metadata.num_entities, neg))
+                elif args.training_edges_considered == 'm-m':
+                    # only use mention-mention links
+                    pos = list(filter(lambda x : x >= metadata.num_entities, pos))
+                    neg = list(filter(lambda x : x >= metadata.num_entities, neg))
+                else:
+                    assert args.training_edges_considered == 'all'
 
                 assert metadata.midx2eidx[anchor] in pos
 

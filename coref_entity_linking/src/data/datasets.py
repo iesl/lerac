@@ -288,6 +288,128 @@ class TripletConcatenationDataset(DistributedSafeDataset):
                 torch.stack(token_type_ids))
 
 
+class SoftmaxEmbeddingDataset(DistributedSafeDataset):
+    """
+    For softmax training with embedding model.
+    """
+    def __init__(self, args, examples, example_dir):
+        super(SoftmaxEmbeddingDataset, self).__init__(args, examples)
+        self.example_dir = example_dir
+
+    def __getitem__(self, index):
+        if index >= len(self.examples):
+            index = random.randint(0, len(self.examples) - 1)
+        ids = self.examples[index]
+        example_idx = []
+        input_ids = []
+        attention_mask = []
+        token_type_ids = []
+        for _id in ids:
+            _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
+            _example_features = _create_bi_encoder_input(
+                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer
+            )
+            _input_ids, _attention_mask, _token_type_ids = _example_features
+
+            example_idx.append(torch.tensor(_id, dtype=torch.long))
+            input_ids.append(torch.tensor(_input_ids, dtype=torch.long))
+            attention_mask.append(
+                    torch.tensor(_attention_mask, dtype=torch.long))
+            token_type_ids.append(
+                    torch.tensor(_token_type_ids, dtype=torch.long))
+
+        return (torch.stack(example_idx),
+                torch.stack(input_ids),
+                torch.stack(attention_mask),
+                torch.stack(token_type_ids))
+
+
+class SoftmaxConcatenationDataset(DistributedSafeDataset):
+    """
+    For softmax training with concatenation model.
+    """
+    def __init__(self, args, examples, example_dir):
+        super(SoftmaxConcatenationDataset, self).__init__(args, examples)
+        self.example_dir = example_dir
+
+    def __getitem__(self, index):
+        if index >= len(self.examples):
+            index = random.randint(0, len(self.examples) - 1)
+        ids = self.examples[index]
+        example_idxs = []
+        input_ids = []
+        attention_mask = []
+        token_type_ids = []
+
+        # anchor, positive, and negatives
+        anc = ids[0]
+        pos_and_neg = ids[1:]
+        seq_dict = {x : _load_example(self.example_dir, x).numpy().tolist()
+                    for x in ids}
+
+        # NOTE: the one positive is always first in `pos_and_neg`,
+        #        the rest of the ids are the negatives; this makes
+        #        training much simpler to implement
+
+        for pos_or_neg_idx in pos_and_neg:
+            idx_a = anc
+            idx_b = pos_or_neg_idx
+
+            # get the forward direction features
+            fwd_feats = _create_cross_encoder_input(
+                idx_a,
+                idx_b,
+                seq_dict[idx_a],
+                seq_dict[idx_b],
+                2*self.args.max_seq_length,
+                self.args.tokenizer
+            )
+            fwd_input_ids, fwd_attention_mask, fwd_token_type_ids = fwd_feats
+
+            # get the backward direction features
+            bwd_feats = _create_cross_encoder_input(
+                idx_b,
+                idx_a,
+                seq_dict[idx_b],
+                seq_dict[idx_a],
+                2*self.args.max_seq_length,
+                self.args.tokenizer
+            )
+            bwd_input_ids, bwd_attention_mask, bwd_token_type_ids = bwd_feats
+
+            # pack forward and backward features together
+            example_idxs.append(
+                torch.stack(
+                    (torch.tensor((idx_a, idx_b), dtype=torch.long),
+                     torch.tensor((idx_b, idx_a), dtype=torch.long))
+                )
+            )
+            input_ids.append(
+                torch.stack(
+                    (torch.tensor(fwd_input_ids, dtype=torch.long),
+                     torch.tensor(bwd_input_ids, dtype=torch.long))
+                )
+            )
+            attention_mask.append(
+                torch.stack(
+                    (torch.tensor(fwd_attention_mask, dtype=torch.long),
+                     torch.tensor(bwd_attention_mask, dtype=torch.long))
+                )
+            )
+            token_type_ids.append(
+                torch.stack(
+                    (torch.tensor(fwd_token_type_ids, dtype=torch.long),
+                     torch.tensor(bwd_token_type_ids, dtype=torch.long))
+                )
+            )
+
+        # pack all off the pairs' data nicely
+        return (torch.stack(example_idxs),
+                torch.stack(input_ids),
+                torch.stack(attention_mask),
+                torch.stack(token_type_ids))
+
+
 class PairsConcatenationDataset(DistributedSafeDataset):
     """
     For triplet training with concatenation model.

@@ -162,6 +162,11 @@ def get_args():
                         choices = ['triplet', 'sigmoid', 'softmax', 'accum_max_margin'],
                         type=str,
                         help="method of training on pairs")
+    parser.add_argument("--training_edges_considered",
+                        default='all',
+                        choices = ['all', 'm-e', 'm-m'],
+                        type=str,
+                        help="which types of edges to consider when training")
     parser.add_argument("--eval_coref_threshold", default=None, type=float,
                         help="For clustering loss")
 

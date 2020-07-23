@@ -30,17 +30,17 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir data/${DATASET}/ \
         --model_type bert \
-        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp6/checkpoint-11163/ \
+        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp8/checkpoint-3721/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp6/checkpoint-11163/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp8/checkpoint-3721/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
-        --do_train_eval \
+        --do_val \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --pooling_strategy 'pool_highlighted_outputs' \
         --clustering_domain 'within_doc' \
         --available_entities 'candidates_only' \
-        --k 32 \
+        --k 64 \
         --per_gpu_infer_batch 256 \
         --evaluate_during_training \
         --logging_steps 25 \

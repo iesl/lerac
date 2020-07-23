@@ -288,6 +288,12 @@ class ClusterLinkingTrainer(Trainer):
                     ]
                     negs[1:, -num_e_negs:] = np.asarray(neg_eidxs)
                 else:
+                    if (args.clustering_domain == 'within_doc'
+                            and args.available_entities == 'knn_candidates'):
+                        raise NotImplementedError('Fix me!')
+                        args.avail_entity_idxs = []
+
+                    # NOTE: this doesn't allow negative e-e edges (there are never any positive ones)
                     _entity_knn_negs = self.train_knn_index.get_knn_limited_index(
                             c_idxs[1:],
                             include_index_idxs=self.avail_entity_idxs,
@@ -364,7 +370,7 @@ class ClusterLinkingTrainer(Trainer):
                     log_return_dicts = []
 
                 # refresh the knn index 
-                if global_step % args.knn_refresh_steps == 0:
+                if args.knn_refresh_steps > 0 and global_step % args.knn_refresh_steps == 0:
                     logger.info('Refreshing kNN index...')
                     self.train_knn_index.refresh_index()
                     logger.info('Done.')
@@ -432,12 +438,12 @@ class ClusterLinkingTrainer(Trainer):
                 save_fname=os.path.join(args.output_dir, suffix,
                                         'embed.' + split + '.debug_results.pkl')
             )
-            #concat_metrics = eval_wdoc(
-            #    args, example_dir, metadata, knn_index, self.concat_sub_trainer,
-            #    save_fname=os.path.join(args.output_dir, suffix,
-            #                            'concat.' + split + '.debug_results.pkl')
-            #)
-            concat_metrics = {}
+            concat_metrics = eval_wdoc(
+                args, example_dir, metadata, knn_index, self.concat_sub_trainer,
+                save_fname=os.path.join(args.output_dir, suffix,
+                                        'concat.' + split + '.debug_results.pkl')
+            )
+            #concat_metrics = {}
         else:
             # FIXME: update after we finalize wdoc changes
             embed_metrics = eval_xdoc(
