@@ -66,6 +66,7 @@ class ConcatenationSubTrainer(object):
                           'concat_input': True}
                 outputs = self.model(**inputs)
                 scores = torch.mean(outputs, -1)
+                scores = torch.sigmoid(scores)
 
                 # max-margin
                 per_triplet_loss = F.relu(

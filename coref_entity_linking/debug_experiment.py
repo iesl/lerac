@@ -12,7 +12,7 @@ from IPython import embed
 
 EXTERNAL_BASE_DIR=('/home/ds-share/data2/users/rangell/lerac/coref_entity_linking/'
                    'experiments/mm_st21pv_long_entities/cluster_linking')
-EXP_ID='exp6'
+EXP_ID='exp10'
 CKPT_ID='checkpoint-11163' 
 
 # TODO:
@@ -28,21 +28,21 @@ def load_data_files():
             EXTERNAL_BASE_DIR,
             EXP_ID,
             CKPT_ID,
-            'knn_index.val.debug_results.pkl'
+            'knn_index.train.debug_results.pkl'
     )
     embed_fname =  os.path.join(
             EXTERNAL_BASE_DIR,
             EXP_ID,
             CKPT_ID,
-            'embed.val.debug_results.pkl'
+            'embed.train.debug_results.pkl'
     )
     concat_fname =  os.path.join(
             EXTERNAL_BASE_DIR,
             EXP_ID,
             CKPT_ID,
-            'concat.val.debug_results.pkl'
+            'concat.train.debug_results.pkl'
     )
-    metadata_fname = 'data/mm_st21pv_long_entities/cache/val/metadata.pt'
+    metadata_fname = 'data/mm_st21pv_long_entities/cache/train/metadata.pt'
 
     knn_index_tuple = load_pickle_file(knn_index_fname)
     embed_results_data = load_pickle_file(embed_fname)

@@ -364,14 +364,14 @@ class ClusterLinkingTrainer(Trainer):
                 # logging stuff for babysitting
                 if global_step % args.logging_steps == 0:
                     avg_return_dict = reduce(dict_merge_with, log_return_dicts)
-                    if get_rank() == 0:
-                        wandb.log(avg_return_dict, step=global_step)
                     for stat_name, stat_value in avg_return_dict.items():
                         logger.info('Average %s: %s at global step: %s',
                                 stat_name,
                                 str(stat_value/args.logging_steps),
                                 str(global_step)
                         )
+                        if get_rank() == 0:
+                            wandb.log({stat_name : stat_value/args.logging_steps}, step=global_step)
                     log_return_dicts = []
 
                 # refresh the knn index 
@@ -405,10 +405,10 @@ class ClusterLinkingTrainer(Trainer):
                         wandb.log(avg_return_dict, step=global_step)
 
         logger.info('Training complete')
-        if get_rank() == 0:
-            embed()
-        synchronize()
-        exit()
+        #if get_rank() == 0:
+        #    embed()
+        #synchronize()
+        #exit()
 
     def evaluate(self, split='', suffix=''):
         assert split in ['train', 'val', 'test']

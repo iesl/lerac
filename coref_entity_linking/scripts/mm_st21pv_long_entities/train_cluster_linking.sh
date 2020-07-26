@@ -22,7 +22,7 @@ python -m torch.distributed.launch \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp9/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp10/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_train \
         --do_val \
@@ -33,7 +33,7 @@ python -m torch.distributed.launch \
         --available_entities 'candidates_only' \
         --training_method 'softmax' \
         --pair_gen_method 'all_pairs' \
-        --training_edges_considered 'm-e' \
+        --training_edges_considered 'all' \
         --k 64 \
         --max_in_cluster_dist 0.1 \
         --margin 0.5 \

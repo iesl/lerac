@@ -22,11 +22,11 @@ class SupervisedClusteringDatasetBuilder(ABC):
     def __init__(self, args):
         self.args = args
         if args.pair_gen_method == 'all_pairs':
-            self.pairs_creator = AllPairsCreator()
+            self.pairs_creator = AllPairsCreator(args)
         elif args.pair_gen_method == 'mst':
-            self.pairs_creator = MstPairsCreator()
+            self.pairs_creator = MstPairsCreator(args)
         else:
-            self.pairs_creator = ExpLinkPairsCreator()
+            self.pairs_creator = ExpLinkPairsCreator(args)
 
     @abstractmethod
     def __call__(self, clusters_mx, sparse_graph, metadata):
@@ -176,6 +176,9 @@ class AccumMaxMarginDatasetBuilder(SupervisedClusteringDatasetBuilder):
 
 class PairsCreator(ABC):
     """ Abstract base class for generating training pairs. """
+    def __init__(self, args):
+        self.args = args
+
     @abstractmethod
     def __call__(self, clusters_mx, sparse_graph):
         pass
@@ -183,6 +186,10 @@ class PairsCreator(ABC):
 
 class AllPairsCreator(PairsCreator):
     """ Create all pairs collection. """
+
+    def __init__(self, args):
+        super(AllPairsCreator, self).__init__(args)
+
     def __call__(self, clusters_mx, sparse_graph, metadata):
         args = self.args
         
