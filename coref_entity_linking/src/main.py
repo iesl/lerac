@@ -274,12 +274,13 @@ def main():
 
     if args.do_train:
         trainer.train()
-    if args.do_train_eval:
-        trainer.evaluate(split='train')
-    if args.do_val:
-        trainer.evaluate(split='val')
-    if args.do_test:
-        trainer.evaluate(split='test')
+    else:
+        if args.do_train_eval:
+            trainer.evaluate(split='train')
+        if args.do_val:
+            trainer.evaluate(split='val')
+        if args.do_test:
+            trainer.evaluate(split='test')
 
 
 if __name__ == "__main__":
