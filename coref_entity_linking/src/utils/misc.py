@@ -6,10 +6,13 @@ import pickle
 import time
 from datetime import datetime, timedelta
 import numpy as np
+import time
 import torch
 import torch.distributed as dist
 
 from IPython import embed
+
+from utils.comm import get_rank, all_gather, synchronize
 
 
 CLS_TOKEN = '[CLS]'
@@ -113,10 +116,11 @@ def initialize_exp(args, logger_filename='train.log'):
                          "to overcome.".format(args.output_dir))
 
     # create output directory and dump parameters
-    if args.local_rank in [-1, 0]:
+    if get_rank() == 0:
         # create output directory
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
+            time.sleep(3)
 
         # args file prefix
         if args.do_train:
@@ -131,7 +135,7 @@ def initialize_exp(args, logger_filename='train.log'):
             raise ValueError("No valid train or validation mode selected")
         args_file = prefix + "_args.pkl"
         pickle.dump(args, open(os.path.join(args.output_dir, args_file), "wb"))
-    dist.barrier()
+    synchronize()
 
     # get running command
     command = ["python", sys.argv[0]]

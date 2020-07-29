@@ -130,9 +130,14 @@ def get_args():
                         default=128,
                         type=int,
                         help="output dimension of embedding model")
-    parser.add_argument("--pooling_strategy",
+    parser.add_argument("--embed_pooling_strategy",
                         default='pool_all_outputs',
                         choices = ['pool_all_outputs', 'pool_highlighted_outputs'],
+                        type=str,
+                        help="how to pool the output layer representations.")
+    parser.add_argument("--concat_pooling_strategy",
+                        default='pool_all_outputs',
+                        choices = ['pool_all_outputs', 'pool_highlighted_outputs', 'cls'],
                         type=str,
                         help="how to pool the output layer representations.")
     parser.add_argument("--num_context_codes", default=4, type=int,

@@ -82,7 +82,8 @@ class VersatileModel(nn.Module):
         config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
         config.cls_id = self.tokenizer.convert_tokens_to_ids(CLS_TOKEN)
         config.sep_id = self.tokenizer.convert_tokens_to_ids(SEP_TOKEN)
-        config.pooling_strategy = args.pooling_strategy
+        config.embed_pooling_strategy = args.embed_pooling_strategy
+        config.concat_pooling_strategy = args.concat_pooling_strategy
         config.seq_embed_dim = args.seq_embed_dim
         self.model = VersatileBertModel.from_pretrained(
                 args.model_name_or_path,
@@ -386,7 +387,7 @@ class VersatileBertModel(BertPreTrainedModel):
             attention_mask = attention_mask.reshape(-1, seq_len)
             token_type_ids = token_type_ids.reshape(-1, seq_len)
 
-            if self.config.pooling_strategy == 'pool_highlighted_outputs':
+            if self.config.embed_pooling_strategy == 'pool_highlighted_outputs':
                 index_tensor = torch.arange(input_ids.shape[1])
                 index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
                 index_tensor = index_tensor.to(input_ids.device)
@@ -394,7 +395,7 @@ class VersatileBertModel(BertPreTrainedModel):
                 end_indices = (input_ids == self.end_mention_id).nonzero()[:,1:]
                 mask = (index_tensor > start_indices) & (index_tensor < end_indices)
                 mask.unsqueeze_(-1)
-            elif self.config.pooling_strategy == 'pool_all_outputs':
+            elif self.config.embed_pooling_strategy == 'pool_all_outputs':
                 mask = attention_mask[:,:,None]
             else:
                 raise ValueError("Invalid pooling strategy")
@@ -429,7 +430,7 @@ class VersatileBertModel(BertPreTrainedModel):
         evaluate=False
     ):
 
-        assert self.config.pooling_strategy == 'pool_highlighted_outputs'
+        #assert self.config.concat_pooling_strategy == 'pool_highlighted_outputs'
         
         with torch.no_grad():
             batch_size, num_seq, sym_dim, seq_len = input_ids.shape
@@ -438,7 +439,7 @@ class VersatileBertModel(BertPreTrainedModel):
             attention_mask = attention_mask.reshape(-1, seq_len)
             token_type_ids = token_type_ids.reshape(-1, seq_len)
 
-            if self.config.pooling_strategy == 'pool_highlighted_outputs':
+            if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
                 index_tensor = torch.arange(input_ids.shape[1])
                 index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
                 index_tensor = index_tensor.to(input_ids.device)
@@ -465,16 +466,22 @@ class VersatileBertModel(BertPreTrainedModel):
             inputs_embeds=inputs_embeds,
         )
 
-        pooled_output_a = (torch.sum(outputs[0] * mask_a, 1)
-                         / torch.sum(mask_a, 1))
-        pooled_output_a = self.dropout(pooled_output_a)
-        pooled_output_b = (torch.sum(outputs[0] * mask_b, 1)
-                         / torch.sum(mask_b, 1))
-        pooled_output_b = self.dropout(pooled_output_b)
-        pooled_output = torch.cat((pooled_output_a, pooled_output_b), dim=1)
-        output = F.gelu(self.concatenation_layer1(pooled_output))
-        output = F.gelu(self.concatenation_layer2(output))
-        output = self.concatenation_layer3(output)
-        output = output.reshape(batch_size, num_seq, sym_dim)
-        #output = torch.sigmoid(output)
+        if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
+            pooled_output_a = (torch.sum(outputs[0] * mask_a, 1)
+                             / torch.sum(mask_a, 1))
+            pooled_output_a = self.dropout(pooled_output_a)
+            pooled_output_b = (torch.sum(outputs[0] * mask_b, 1)
+                             / torch.sum(mask_b, 1))
+            pooled_output_b = self.dropout(pooled_output_b)
+            pooled_output = torch.cat((pooled_output_a, pooled_output_b), dim=1)
+            output = F.gelu(self.concatenation_layer1(pooled_output))
+            output = F.gelu(self.concatenation_layer2(output))
+            output = self.concatenation_layer3(output)
+            output = output.reshape(batch_size, num_seq, sym_dim)
+            #output = torch.sigmoid(output)
+        elif self.config.concat_pooling_strategy == 'cls':
+            output = outputs[0][:, 0, :]
+            output = torch.tanh(self.concatenation_layer2(output))
+            output = self.concatenation_layer3(output)
+            output = output.reshape(batch_size, num_seq, sym_dim)
         return output
