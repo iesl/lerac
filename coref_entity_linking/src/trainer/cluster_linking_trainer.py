@@ -309,8 +309,6 @@ class ClusterLinkingTrainer(Trainer):
                             k=min(num_e_negs, len(self.avail_entity_idxs))
                     )
 
-                    _entity_knn_negs = _entity_knn_negs[:, :-1]
-
                     if _entity_knn_negs.shape[1] < num_e_negs:
                         assert _entity_knn_negs.shape[1] == len(self.avail_entity_idxs)
                         _buff = _entity_knn_negs.shape[1] - num_e_negs

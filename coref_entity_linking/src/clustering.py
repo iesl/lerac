@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import logging
 import math
 import numpy as np
+from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree, connected_components
 from random import shuffle
 
@@ -263,7 +264,98 @@ class AllPairsCreator(PairsCreator):
     
 
 class MstPairsCreator(PairsCreator):
-    pass
+
+    def __init__(self, args):
+        super(MstPairsCreator, self).__init__(args)
+
+    def __call__(self, clusters_mx, sparse_graph, metadata):
+        args = self.args
+        
+        # FIXME: this is kinda slow, maybe fix with Cython??
+        # check to make sure this is true
+        _row = clusters_mx.row
+        _data = clusters_mx.data
+        assert np.all(np.isin(sparse_graph.row, _data))
+
+        # get all of the edges
+        all_edges = np.vstack((sparse_graph.row, sparse_graph.col))
+
+        # get the positive and negative edges
+        local_pos_a, local_pos_b = np.where(
+                np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
+        )
+        pos_a = _data[local_pos_a]
+        pos_b = _data[local_pos_b]
+        _pos_edges = np.vstack((pos_a, pos_b)).T.tolist()
+        pos_mask = np.asarray([x in _pos_edges for x in all_edges.T.tolist()])
+        neg_mask = ~pos_mask
+        pos_edges = all_edges[:, pos_mask]
+        #pos_edges = np.concatenate((pos_edges, pos_edges[[1, 0]]), axis=1).T
+        neg_edges = all_edges[:, neg_mask].T
+
+        # organize pairs collection
+        pairs_collection = []
+        for cluster_index in range(clusters_mx.shape[0]):
+            cluster_pairs_collection = []
+            anchors = clusters_mx.data[_row == cluster_index] 
+
+            # get cluster specific edges based on MST
+            in_cluster_mask = np.isin(pos_edges, anchors)
+            in_cluster_mask = (in_cluster_mask[0] & in_cluster_mask[1])
+
+            in_cluster_row = sparse_graph.row[pos_mask][in_cluster_mask]
+            in_cluster_col = sparse_graph.col[pos_mask][in_cluster_mask]
+            in_cluster_data = -1.0 * sparse_graph.data[pos_mask][in_cluster_mask]
+            in_cluster_csr = csr_matrix(
+                    (in_cluster_data, (in_cluster_row, in_cluster_col)),
+                    shape=sparse_graph.shape
+            )
+
+            in_cluster_mst = minimum_spanning_tree(in_cluster_csr).tocoo()
+            in_cluster_pos_edges = np.vstack((in_cluster_mst.row,
+                                              in_cluster_mst.col))
+            in_cluster_pos_edges = np.concatenate(
+                    (in_cluster_pos_edges, in_cluster_pos_edges[[1, 0]]),
+                    axis=1).T
+
+            for anchor in anchors:
+                if anchor < metadata.num_entities:
+                    continue
+
+                pos = in_cluster_pos_edges[:, 1][in_cluster_pos_edges[:, 0] == anchor].tolist()
+
+                # this line removes positive entity from anchor's pos list
+                # if it doesn't appear in that mention's candidate set
+                # NOTE: this might be too harsh
+                #pos = list(filter(lambda x : (x >= metadata.num_entities
+                #                        or x in metadata.midx2cand[anchor]),
+                #                  pos))
+
+                neg = neg_edges[:, 1][neg_edges[:, 0] == anchor].tolist()
+                neg = list(filter(lambda x : x >= 0, neg))
+
+                if args.training_edges_considered == 'm-e':
+                    # only use mention-entity links
+                    pos = list(filter(lambda x : x < metadata.num_entities, pos))
+                    neg = list(filter(lambda x : x < metadata.num_entities, neg))
+                elif args.training_edges_considered == 'm-m':
+                    # only use mention-mention links
+                    pos = list(filter(lambda x : x >= metadata.num_entities, pos))
+                    neg = list(filter(lambda x : x >= metadata.num_entities, neg))
+                else:
+                    assert args.training_edges_considered == 'all'
+
+                cluster_pairs_collection.append(
+                    {
+                        'anchor' : anchor,
+                        'pos' : pos,
+                        'neg' : neg
+                    }
+                )
+            pairs_collection.append(cluster_pairs_collection)
+
+
+        return pairs_collection
 
 
 class ExpLinkPairsCreator(PairsCreator):
