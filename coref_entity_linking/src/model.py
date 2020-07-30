@@ -391,8 +391,12 @@ class VersatileBertModel(BertPreTrainedModel):
                 index_tensor = torch.arange(input_ids.shape[1])
                 index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
                 index_tensor = index_tensor.to(input_ids.device)
-                start_indices = (input_ids == self.start_mention_id).nonzero()[:,1:]
-                end_indices = (input_ids == self.end_mention_id).nonzero()[:,1:]
+                #start_indices = (input_ids == self.start_mention_id).nonzero()[:,1:]
+                #end_indices = (input_ids == self.end_mention_id).nonzero()[:,1:]
+                start_indices = torch.nonzero(input_ids == self.start_mention_id,
+                                              as_tuple=False)[:,1:]
+                end_indices = torch.nonzero(input_ids == self.end_mention_id,
+                                            as_tuple=False)[:,1:]
                 mask = (index_tensor > start_indices) & (index_tensor < end_indices)
                 mask.unsqueeze_(-1)
             elif self.config.embed_pooling_strategy == 'pool_all_outputs':
@@ -444,8 +448,13 @@ class VersatileBertModel(BertPreTrainedModel):
                 index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
                 index_tensor = index_tensor.to(input_ids.device)
 
-                _start_indices = (input_ids == self.start_mention_id).nonzero()
-                _end_indices = (input_ids == self.end_mention_id).nonzero()
+                #_start_indices = (input_ids == self.start_mention_id).nonzero()
+                #_end_indices = (input_ids == self.end_mention_id).nonzero()
+
+                _start_indices = torch.nonzero(input_ids == self.start_mention_id,
+                                               as_tuple=False)
+                _end_indices = torch.nonzero(input_ids == self.end_mention_id,
+                                             as_tuple=False)
 
                 start_indices_a = _start_indices[::2,1:]
                 end_indices_a = _end_indices[::2,1:]
