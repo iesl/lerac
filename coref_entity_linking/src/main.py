@@ -165,8 +165,8 @@ def get_args():
                         type=str,
                         help="method for generating pairs")
     parser.add_argument("--training_method",
-                        default='triplet',
-                        choices = ['triplet', 'sigmoid', 'softmax', 'accum_max_margin'],
+                        default='triplet_max_margin',
+                        choices = ['triplet_max_margin', 'triplet_bpr', 'softmax'],
                         type=str,
                         help="method of training on pairs")
     parser.add_argument("--training_edges_considered",

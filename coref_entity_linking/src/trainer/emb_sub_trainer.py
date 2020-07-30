@@ -153,13 +153,12 @@ class EmbeddingSubTrainer(object):
 
     def train_on_subset(self, dataset_list, metadata):
         args = self.args
-        if args.training_method == 'triplet':
+        if 'triplet' in args.training_method:
             return self._train_triplet(dataset_list, metadata)
         elif args.training_method == 'softmax':
             return self._train_softmax(dataset_list, metadata)
         else:
-            raise ValueError('training method not implemented yet')
-
+            raise ValueError('unsupported training_method')
 
     def _train_triplet(self, dataset_list, metadata):
         args = self.args
@@ -192,18 +191,22 @@ class EmbeddingSubTrainer(object):
                         dim=-1
                 )
 
-                # max-margin
-                per_triplet_loss = F.relu(
-                        pos_neg_dot_prods[:, 1]   # negative dot products
-                        - pos_neg_dot_prods[:, 0] # positive dot products
-                        + args.margin
-                )
-                # BPR
-                #per_triplet_loss = torch.sigmoid(
-                #        pos_neg_dot_prods[:, 1]   # negative dot products
-                #        - pos_neg_dot_prods[:, 0] # positive dot products
-                #        + args.margin
-                #)
+                if args.training_method == 'triplet_max_margin':
+                    # max-margin
+                    per_triplet_loss = F.relu(
+                            pos_neg_dot_prods[:, 1]   # negative dot products
+                            - pos_neg_dot_prods[:, 0] # positive dot products
+                            + args.margin
+                    )
+                elif args.training_method == 'triplet_bpr':
+                    # BPR
+                    per_triplet_loss = torch.sigmoid(
+                            pos_neg_dot_prods[:, 1]   # negative dot products
+                            - pos_neg_dot_prods[:, 0] # positive dot products
+                            + args.margin
+                    )
+                else:
+                    raise ValueError('unsupported training_method')
 
                 # record triplet specific losses
                 _detached_per_triplet_loss = per_triplet_loss.clone().detach().cpu()
@@ -266,9 +269,6 @@ class EmbeddingSubTrainer(object):
         else:
             synchronize()
             return None
-
-    def _train_sigmoid(self, dataset_list, metadata):
-        pass
     
     def _train_softmax(self, dataset_list, metadata):
         args = self.args
@@ -322,9 +322,6 @@ class EmbeddingSubTrainer(object):
         else:
             synchronize()
             return None
-
-    def _train_accum_max_margin(self, dataset_list, metadata):
-        pass
 
     def get_edge_affinities(self, edges, example_dir, knn_index):
         if get_rank() == 0:

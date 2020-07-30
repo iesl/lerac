@@ -34,12 +34,12 @@ class ConcatenationSubTrainer(object):
 
     def train_on_subset(self, dataset_list, metadata):
         args = self.args
-        if args.training_method == 'triplet':
+        if 'triplet' in args.training_method:
             return self._train_triplet(dataset_list, metadata)
         elif args.training_method == 'softmax':
             return self._train_softmax(dataset_list, metadata)
         else:
-            raise ValueError('training method not implemented yet')
+            raise ValueError('unsupported training_method')
 
     def _train_triplet(self, dataset_list, metadata):
         args = self.args
@@ -68,18 +68,22 @@ class ConcatenationSubTrainer(object):
                 scores = torch.mean(outputs, -1)
                 scores = torch.sigmoid(scores)
 
-                # max-margin
-                per_triplet_loss = F.relu(
-                        scores[:, 1]   # negative dot products
-                        - scores[:, 0] # positive dot products
-                        + args.margin
-                )
-                # BPR
-                #per_triplet_loss = torch.sigmoid(
-                #        scores[:, 1]   # negative dot products
-                #        - scores[:, 0] # positive dot products
-                #        + args.margin
-                #)
+                if args.training_method == 'triplet_max_margin':
+                    # max-margin
+                    per_triplet_loss = F.relu(
+                            scores[:, 1]   # negative dot products
+                            - scores[:, 0] # positive dot products
+                            + args.margin
+                    )
+                elif args.training_method == 'triplet_bpr':
+                    # BPR
+                    per_triplet_loss = torch.sigmoid(
+                            scores[:, 1]   # negative dot products
+                            - scores[:, 0] # positive dot products
+                            + args.margin
+                    )
+                else:
+                    raise ValueError('unsupported training_method')
 
                 # record triplet specific losses
                 _detached_per_triplet_loss = per_triplet_loss.clone().detach().cpu()

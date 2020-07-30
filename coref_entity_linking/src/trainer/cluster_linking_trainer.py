@@ -49,16 +49,12 @@ class ClusterLinkingTrainer(Trainer):
         if args.do_train or args.do_train_eval:
             self.create_knn_index('train')
             if args.do_train:
-                assert (args.pair_gen_method == 'all_pairs'
-                        or args.training_method == 'accum_max_margin')
-                if args.training_method == 'triplet':
+                if 'triplet' in args.training_method:
                     self.dataset_builder = TripletDatasetBuilder(args)
-                elif args.training_method == 'sigmoid':
-                    self.dataset_builder = SigmoidDatasetBuilder(args)
                 elif args.training_method == 'softmax':
                     self.dataset_builder = SoftmaxDatasetBuilder(args)
                 else:
-                    self.dataset_builder = AccumMaxMarginDatasetBuilder(args)
+                    raise ValueError('unsupported training_method')
         if args.do_val: # or args.evaluate_during_training:
             self.create_knn_index('val')
         if args.do_test:
