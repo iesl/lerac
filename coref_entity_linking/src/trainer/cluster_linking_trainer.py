@@ -274,10 +274,14 @@ class ClusterLinkingTrainer(Trainer):
                 )
 
                 # produce available negative entity idxs
+                # NOTE: this doesn't allow negative e-e edges (there are never any positive ones)
                 num_e_negs = args.k - num_m_negs
                 if args.available_entities == 'candidates_only':
                     neg_eidxs = [
-                        self.train_metadata.midx2cand.get(i, [])[:num_e_negs]
+                        list(filter(
+                            lambda x : x != c_idxs[0],
+                            self.train_metadata.midx2cand.get(i, [])
+                        ))[:num_e_negs]
                             for i in c_idxs
                                 if i >= self.train_metadata.num_entities
                     ]
@@ -289,16 +293,30 @@ class ClusterLinkingTrainer(Trainer):
                 else:
                     if (args.clustering_domain == 'within_doc'
                             and args.available_entities == 'knn_candidates'):
-                        raise NotImplementedError('Fix me!')
-                        args.avail_entity_idxs = []
+                        # custom w/in doc negative available entities
+                        self.avail_entity_idxs = flatten([
+                            list(filter(
+                                lambda x : x != c_idxs[0],
+                                self.train_metadata.midx2cand.get(i, [])
+                            ))
+                                for i in (c_idxs + neg_midxs)
+                                    if i >= self.train_metadata.num_entities
+                        ])
 
-                    # NOTE: this doesn't allow negative e-e edges (there are never any positive ones)
                     _entity_knn_negs = self.train_knn_index.get_knn_limited_index(
                             c_idxs[1:],
                             include_index_idxs=self.avail_entity_idxs,
-                            k=num_e_negs
+                            k=min(num_e_negs, len(self.avail_entity_idxs))
                     )
-                    negs[1:, -num_e_negs:] = _entity_knn_negs
+
+                    _entity_knn_negs = _entity_knn_negs[:, :-1]
+
+                    if _entity_knn_negs.shape[1] < num_e_negs:
+                        assert _entity_knn_negs.shape[1] == len(self.avail_entity_idxs)
+                        _buff = _entity_knn_negs.shape[1] - num_e_negs
+                        negs[1:, -num_e_negs:_buff] = _entity_knn_negs
+                    else:
+                        negs[1:, -num_e_negs:] = _entity_knn_negs
 
                 negatives_list.append(negs)
 
@@ -318,10 +336,10 @@ class ClusterLinkingTrainer(Trainer):
         else:
             raise NotImplementedError('xdoc not implemented yet')
 
+
         global_step = 0
         log_return_dicts = []
 
-        # FIXME: this only does one epoch as of now
         logger.info('Starting training...')
 
         batch = None

@@ -364,12 +364,25 @@ def build_sparse_affinity_graph(args,
                         )
             elif args.available_entities == 'knn_candidates':
                 # get all of the mention kNN
-                all_midxs = list(metadata.midx2eidx.keys())
-                cand_gen_knn = knn_index.get_knn_limited_index(
-                        midxs,
-                        exclude_index_idxs=all_midxs,
-                        k=args.k
-                )
+                if args.clustering_domain == 'within_doc':
+                    avail_eidxs = flatten([
+                            metadata.midx2cand.get(midx, [])
+                                for midx in midxs
+                    ])
+                    cand_gen_knn = knn_index.get_knn_limited_index(
+                            midxs,
+                            include_index_idxs=avail_eidxs,
+                            k=args.k
+                    )
+                elif args.clustering_domain == 'cross_doc':
+                    all_midxs = list(metadata.midx2eidx.keys())
+                    cand_gen_knn = knn_index.get_knn_limited_index(
+                            midxs,
+                            exclude_index_idxs=all_midxs,
+                            k=args.k
+                    )
+                else:
+                    raise ValueError('unsupported clustering_domain')
                 linking_graph_edges.extend(
                     [tuple(sorted((a, b)))
                         for a, l in zip(midxs, cand_gen_knn) for b in l]
