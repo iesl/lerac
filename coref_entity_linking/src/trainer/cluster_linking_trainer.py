@@ -388,8 +388,10 @@ class ClusterLinkingTrainer(Trainer):
                 log_return_dicts.append(self.train_step(batch))
                 global_step += 1
 
+                # NOTE: for testing, switch during training
                 if global_step >= 300:
                     args.mention_negatives = 'knn_candidates'
+                    args.available_entities = 'knn_candidates'
 
                 # logging stuff for babysitting
                 if global_step % args.logging_steps == 0:
