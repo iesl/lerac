@@ -266,12 +266,27 @@ class ClusterLinkingTrainer(Trainer):
                 # initialize the negs tensors
                 negs = np.tile(-1, (len(c_idxs), args.k))
 
-                # sample mention negatives
-                negs[:,:num_m_negs] = self.train_knn_index.get_knn_limited_index(
-                    c_idxs,
-                    include_index_idxs=neg_midxs,
-                    k=num_m_negs
-                )
+                if args.mention_negatives == 'context_overlap':
+                    # use overlapping context negative mentions
+                    neg_midxs_objects = [
+                            (midx, self.train_metadata.mentions[self.train_metadata.idx2uid[midx]])
+                                for midx in neg_midxs
+                    ]
+                    for i, idx in enumerate(c_idxs):
+                        if idx >= self.train_metadata.num_entities:
+                            idx_object = self.train_metadata.mentions[self.train_metadata.idx2uid[idx]]
+                            neg_context_dists = [(x[0], abs(idx_object['start_index'] - x[1]['start_index']))
+                                                    for x in neg_midxs_objects]
+                            neg_context_dists.sort(key=lambda x : x[1])
+                            local_neg_midxs, _ = zip(*neg_context_dists)
+                            negs[i,:num_m_negs] = np.asarray(local_neg_midxs[:num_m_negs])
+                else:
+                    # sample mention negatives according to embedding model
+                    negs[:,:num_m_negs] = self.train_knn_index.get_knn_limited_index(
+                        c_idxs,
+                        include_index_idxs=neg_midxs,
+                        k=num_m_negs
+                    )
 
                 # produce available negative entity idxs
                 # NOTE: this doesn't allow negative e-e edges (there are never any positive ones)
@@ -372,6 +387,9 @@ class ClusterLinkingTrainer(Trainer):
                 # run train_step
                 log_return_dicts.append(self.train_step(batch))
                 global_step += 1
+
+                if global_step >= 300:
+                    args.mention_negatives = 'knn_candidates'
 
                 # logging stuff for babysitting
                 if global_step % args.logging_steps == 0:

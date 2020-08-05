@@ -159,6 +159,12 @@ def get_args():
                                    'open_domain'],
                         type=str,
                         help="what to consider when choosing negative entities")
+    parser.add_argument("--mention_negatives",
+                        default='candidates_only',
+                        choices = ['context_overlap',
+                                   'knn_candidates'],
+                        type=str,
+                        help="what to consider when choosing negative mentions")
     parser.add_argument("--pair_gen_method",
                         default='all_pairs',
                         choices = ['all_pairs', 'mst', 'explink'],
