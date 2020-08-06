@@ -6,8 +6,10 @@ from collections import defaultdict
 from types import SimpleNamespace
 import torch
 
-from utils.misc import (START_HGHLGHT_TOKEN,
-                        END_HGHLGHT_TOKEN)
+from utils.misc import (START_MENTION_HGHLGHT_TOKEN,
+                        END_MENTION_HGHLGHT_TOKEN,
+                        START_ENTITY_HGHLGHT_TOKEN,
+                        END_ENTITY_HGHLGHT_TOKEN)
 
 from IPython import embed
 
@@ -60,7 +62,7 @@ class ZeshelPreprocessor(object):
         suffix = tokenizer.tokenize(suffix)
         mention = tokenizer.tokenize(
                     ' '.join(context_tokens[start_index:end_index+1]))
-        mention = [START_HGHLGHT_TOKEN] + mention + [END_HGHLGHT_TOKEN]
+        mention = [START_MENTION_HGHLGHT_TOKEN] + mention + [END_MENTION_HGHLGHT_TOKEN]
 
         assert len(mention) < max_tokens
 
@@ -140,7 +142,7 @@ class ZeshelPreprocessor(object):
         entity_text = documents[entity_id]['text']
         entity_tokens = tokenizer.tokenize(entity_text)
         entity_tokens = entity_tokens[:entity_length-2]
-        entity_tokens = [START_HGHLGHT_TOKEN] + entity_tokens + [END_HGHLGHT_TOKEN]
+        entity_tokens = [START_ENTITY_HGHLGHT_TOKEN] + entity_tokens + [END_ENTITY_HGHLGHT_TOKEN]
         input_ids = tokenizer.convert_tokens_to_ids(entity_tokens)
         return input_ids
 

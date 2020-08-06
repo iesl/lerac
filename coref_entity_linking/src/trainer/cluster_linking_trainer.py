@@ -7,6 +7,7 @@ import pickle
 from scipy.sparse import coo_matrix
 from torch.utils.data import DataLoader, SequentialSampler
 from tqdm import tqdm, trange
+import random
 
 from clustering import (TripletDatasetBuilder,
                         SigmoidDatasetBuilder,
@@ -41,6 +42,8 @@ class ClusterLinkingTrainer(Trainer):
 
     def __init__(self, args):
         super(ClusterLinkingTrainer, self).__init__(args)
+
+        args.num_entities = self.train_metadata.num_entities
 
         # create sub-trainers for models
         self.create_sub_trainers()
@@ -280,6 +283,10 @@ class ClusterLinkingTrainer(Trainer):
                             neg_context_dists.sort(key=lambda x : x[1])
                             local_neg_midxs, _ = zip(*neg_context_dists)
                             negs[i,:num_m_negs] = np.asarray(local_neg_midxs[:num_m_negs])
+                elif args.mention_negatives == 'random':
+                    for i, idx in enumerate(c_idxs):
+                        if idx >= self.train_metadata.num_entities:
+                            negs[i,:num_m_negs] = random.sample(neg_midxs, num_m_negs)
                 else:
                     # sample mention negatives according to embedding model
                     negs[:,:num_m_negs] = self.train_knn_index.get_knn_limited_index(
@@ -389,7 +396,7 @@ class ClusterLinkingTrainer(Trainer):
                 global_step += 1
 
                 # NOTE: for testing, switch during training
-                if global_step >= 300:
+                if global_step >= 1500:
                     args.mention_negatives = 'knn_candidates'
                     args.available_entities = 'knn_candidates'
 

@@ -31,8 +31,10 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 from utils.comm import get_rank, all_gather, synchronize
 from utils.misc import (CLS_TOKEN,
                         SEP_TOKEN,
-                        START_HGHLGHT_TOKEN,
-                        END_HGHLGHT_TOKEN,
+                        START_MENTION_HGHLGHT_TOKEN,
+                        END_MENTION_HGHLGHT_TOKEN,
+                        START_ENTITY_HGHLGHT_TOKEN,
+                        END_ENTITY_HGHLGHT_TOKEN,
                         flatten,
                         DistributedCache)
 
@@ -78,8 +80,10 @@ class VersatileModel(nn.Module):
                    else None)
 
         # Add some custom variables to the config
-        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_HGHLGHT_TOKEN)
-        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
+        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_MENTION_HGHLGHT_TOKEN)
+        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_MENTION_HGHLGHT_TOKEN)
+        config.start_entity_id = self.tokenizer.convert_tokens_to_ids(START_ENTITY_HGHLGHT_TOKEN)
+        config.end_entity_id = self.tokenizer.convert_tokens_to_ids(END_ENTITY_HGHLGHT_TOKEN)
         config.cls_id = self.tokenizer.convert_tokens_to_ids(CLS_TOKEN)
         config.sep_id = self.tokenizer.convert_tokens_to_ids(SEP_TOKEN)
         config.embed_pooling_strategy = args.embed_pooling_strategy
@@ -163,8 +167,10 @@ class MirrorEmbeddingModel(nn.Module):
                    else None)
 
         # Add some custom variables to the config
-        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_HGHLGHT_TOKEN)
-        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_HGHLGHT_TOKEN)
+        config.start_mention_id = self.tokenizer.convert_tokens_to_ids(START_MENTION_HGHLGHT_TOKEN)
+        config.end_mention_id = self.tokenizer.convert_tokens_to_ids(END_MENTION_HGHLGHT_TOKEN)
+        config.start_entity_id = self.tokenizer.convert_tokens_to_ids(START_ENTITY_HGHLGHT_TOKEN)
+        config.end_entity_id = self.tokenizer.convert_tokens_to_ids(END_ENTITY_HGHLGHT_TOKEN)
         config.pooling_strategy = args.pooling_strategy
         config.seq_embed_dim = args.seq_embed_dim
         self.model = SequenceEmbeddingModel.from_pretrained(
@@ -320,6 +326,8 @@ class VersatileBertModel(BertPreTrainedModel):
         self.config = config
         self.start_mention_id = config.start_mention_id
         self.end_mention_id = config.end_mention_id
+        self.start_entity_id = config.start_entity_id
+        self.end_entity_id = config.end_entity_id
         self.cls_id = config.cls_id
         self.sep_id = config.sep_id
 
@@ -393,9 +401,9 @@ class VersatileBertModel(BertPreTrainedModel):
                 index_tensor = index_tensor.to(input_ids.device)
                 #start_indices = (input_ids == self.start_mention_id).nonzero()[:,1:]
                 #end_indices = (input_ids == self.end_mention_id).nonzero()[:,1:]
-                start_indices = torch.nonzero(input_ids == self.start_mention_id,
+                start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
                                               as_tuple=False)[:,1:]
-                end_indices = torch.nonzero(input_ids == self.end_mention_id,
+                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id)),
                                             as_tuple=False)[:,1:]
                 mask = (index_tensor > start_indices) & (index_tensor < end_indices)
                 mask.unsqueeze_(-1)
@@ -451,15 +459,15 @@ class VersatileBertModel(BertPreTrainedModel):
                 #_start_indices = (input_ids == self.start_mention_id).nonzero()
                 #_end_indices = (input_ids == self.end_mention_id).nonzero()
 
-                _start_indices = torch.nonzero(input_ids == self.start_mention_id,
-                                               as_tuple=False)
-                _end_indices = torch.nonzero(input_ids == self.end_mention_id,
-                                             as_tuple=False)
+                start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
+                                              as_tuple=False)[:,1:]
+                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id)),
+                                            as_tuple=False)[:,1:]
 
-                start_indices_a = _start_indices[::2,1:]
-                end_indices_a = _end_indices[::2,1:]
-                start_indices_b = _start_indices[1::2,1:]
-                end_indices_b = _end_indices[1::2,1:]
+                start_indices_a = start_indices[::2,1:]
+                end_indices_a = end_indices[::2,1:]
+                start_indices_b = start_indices[1::2,1:]
+                end_indices_b = end_indices[1::2,1:]
                 
                 mask_a = (index_tensor > start_indices_a) & (index_tensor < end_indices_a)
                 mask_b = (index_tensor > start_indices_b) & (index_tensor < end_indices_b)

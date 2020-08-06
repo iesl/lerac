@@ -162,6 +162,7 @@ def get_args():
     parser.add_argument("--mention_negatives",
                         default='candidates_only',
                         choices = ['context_overlap',
+                                   'random',
                                    'knn_candidates'],
                         type=str,
                         help="what to consider when choosing negative mentions")

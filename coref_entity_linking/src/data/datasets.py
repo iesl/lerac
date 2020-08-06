@@ -34,6 +34,7 @@ def _create_bi_encoder_input(idx,
                              input_ids,
                              max_length,
                              tokenizer,
+                             num_entities,
                              pad_token_segment_id=0,
                              pad_on_left=False,
                              pad_token=0,
@@ -44,7 +45,7 @@ def _create_bi_encoder_input(idx,
     sep_token_id = tokenizer.convert_tokens_to_ids(SEP_TOKEN)
 
     input_ids = [cls_token_id] + input_ids + [sep_token_id]
-    token_type_ids = [0] * len(input_ids) # segment_ids
+    token_type_ids = [idx < num_entities] * len(input_ids) # segment_ids
 
     # The mask has 1 for real tokens and 0 for padding tokens. Only real
     # tokens are attended to.
@@ -72,6 +73,7 @@ def _create_cross_encoder_input(idx_a,
                                 input_ids_b,
                                 max_length,
                                 tokenizer,
+                                num_entities,
                                 pad_token_segment_id=0,
                                 pad_on_left=False,
                                 pad_token=0,
@@ -89,8 +91,10 @@ def _create_cross_encoder_input(idx_a,
                  + [sep_token_id])
 
     # segment_ids
-    token_type_ids = ([0] * (len(input_ids_a) + 2)
-                      + [1] * (len(input_ids_b) + 1))
+    #token_type_ids = ([0] * (len(input_ids_a) + 2)
+    #                  + [1] * (len(input_ids_b) + 1))
+    token_type_ids = ([idx_a < num_entities] * (len(input_ids_a) + 2)
+                      + [idx_b < num_entities] * (len(input_ids_b) + 1))
 
     # The mask has 1 for real tokens and 0 for padding tokens. Only real
     # tokens are attended to.
@@ -157,7 +161,7 @@ class InferenceEmbeddingDataset(DistributedSafeDataset):
         _id = self.examples[index]
         _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
         _example_features = _create_bi_encoder_input(
-            _id, _example_seq, self.args.max_seq_length, self.args.tokenizer
+            _id, _example_seq, self.args.max_seq_length, self.args.tokenizer, self.args.num_entities
         )
         input_ids, attention_mask, token_type_ids = _example_features
 
@@ -191,7 +195,7 @@ class TripletEmbeddingDataset(DistributedSafeDataset):
         for _id in ids:
             _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
             _example_features = _create_bi_encoder_input(
-                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer
+                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer, self.args.num_entities
             )
             _input_ids, _attention_mask, _token_type_ids = _example_features
 
@@ -240,7 +244,8 @@ class TripletConcatenationDataset(DistributedSafeDataset):
                 seq_dict[idx_a],
                 seq_dict[idx_b],
                 2*self.args.max_seq_length,
-                self.args.tokenizer
+                self.args.tokenizer,
+                self.args.num_entities
             )
             fwd_input_ids, fwd_attention_mask, fwd_token_type_ids = fwd_feats
 
@@ -251,7 +256,8 @@ class TripletConcatenationDataset(DistributedSafeDataset):
                 seq_dict[idx_b],
                 seq_dict[idx_a],
                 2*self.args.max_seq_length,
-                self.args.tokenizer
+                self.args.tokenizer,
+                self.args.num_entities
             )
             bwd_input_ids, bwd_attention_mask, bwd_token_type_ids = bwd_feats
 
@@ -307,7 +313,7 @@ class SoftmaxEmbeddingDataset(DistributedSafeDataset):
         for _id in ids:
             _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
             _example_features = _create_bi_encoder_input(
-                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer
+                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer, self.args.num_entities
             )
             _input_ids, _attention_mask, _token_type_ids = _example_features
 
@@ -362,7 +368,8 @@ class SoftmaxConcatenationDataset(DistributedSafeDataset):
                 seq_dict[idx_a],
                 seq_dict[idx_b],
                 2*self.args.max_seq_length,
-                self.args.tokenizer
+                self.args.tokenizer,
+                self.args.num_entities
             )
             fwd_input_ids, fwd_attention_mask, fwd_token_type_ids = fwd_feats
 
@@ -373,7 +380,8 @@ class SoftmaxConcatenationDataset(DistributedSafeDataset):
                 seq_dict[idx_b],
                 seq_dict[idx_a],
                 2*self.args.max_seq_length,
-                self.args.tokenizer
+                self.args.tokenizer,
+                self.args.num_entities
             )
             bwd_input_ids, bwd_attention_mask, bwd_token_type_ids = bwd_feats
 

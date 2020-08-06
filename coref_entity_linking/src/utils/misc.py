@@ -17,8 +17,10 @@ from utils.comm import get_rank, all_gather, synchronize
 
 CLS_TOKEN = '[CLS]'
 SEP_TOKEN = '[SEP]'
-START_HGHLGHT_TOKEN = '[unused1]'
-END_HGHLGHT_TOKEN = '[unused2]'
+START_MENTION_HGHLGHT_TOKEN = '[unused1]'
+END_MENTION_HGHLGHT_TOKEN = '[unused2]'
+START_ENTITY_HGHLGHT_TOKEN = '[unused3]'
+END_ENTITY_HGHLGHT_TOKEN = '[unused4]'
 
 
 def flatten(lst):

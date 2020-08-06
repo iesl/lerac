@@ -39,7 +39,7 @@ def _custom_distributed_sampler(dataset):
             dataset,
             num_replicas=get_world_size(),
             rank=get_rank(),
-            shuffle=False
+            shuffle=True
     )
 
 

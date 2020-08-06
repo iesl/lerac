@@ -223,13 +223,13 @@ class EmbeddingSubTrainer(object):
                 loss = torch.mean(per_triplet_loss)
                 loss.backward()
 
-            torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    args.max_grad_norm
-            )
-            self.optimizer.step()
-            self.scheduler.step()
-            self.model.zero_grad()
+                torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(),
+                        args.max_grad_norm
+                )
+                self.optimizer.step()
+                self.scheduler.step()
+                self.model.zero_grad()
 
             time_per_dataset.append(time.time() - _dataset_start_time)
 
@@ -300,13 +300,13 @@ class EmbeddingSubTrainer(object):
                 losses.append(loss.item())
                 loss.backward()
 
-            torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    args.max_grad_norm
-            )
-            self.optimizer.step()
-            self.scheduler.step()
-            self.model.zero_grad()
+                torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(),
+                        args.max_grad_norm
+                )
+                self.optimizer.step()
+                self.scheduler.step()
+                self.model.zero_grad()
             time_per_dataset.append(time.time() - _dataset_start_time)
 
         gathered_data = all_gather({
