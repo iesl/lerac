@@ -403,7 +403,7 @@ class VersatileBertModel(BertPreTrainedModel):
                 #end_indices = (input_ids == self.end_mention_id).nonzero()[:,1:]
                 start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
                                               as_tuple=False)[:,1:]
-                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id)),
+                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id),
                                             as_tuple=False)[:,1:]
                 mask = (index_tensor > start_indices) & (index_tensor < end_indices)
                 mask.unsqueeze_(-1)
@@ -461,7 +461,7 @@ class VersatileBertModel(BertPreTrainedModel):
 
                 start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
                                               as_tuple=False)[:,1:]
-                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id)),
+                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id),
                                             as_tuple=False)[:,1:]
 
                 start_indices_a = start_indices[::2,1:]
