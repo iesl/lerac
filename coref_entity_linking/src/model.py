@@ -464,10 +464,10 @@ class VersatileBertModel(BertPreTrainedModel):
                 end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id),
                                             as_tuple=False)[:,1:]
 
-                start_indices_a = start_indices[::2,1:]
-                end_indices_a = end_indices[::2,1:]
-                start_indices_b = start_indices[1::2,1:]
-                end_indices_b = end_indices[1::2,1:]
+                start_indices_a = start_indices[::2,:]
+                end_indices_a = end_indices[::2,:]
+                start_indices_b = start_indices[1::2,:]
+                end_indices_b = end_indices[1::2,:]
                 
                 mask_a = (index_tensor > start_indices_a) & (index_tensor < end_indices_a)
                 mask_b = (index_tensor > start_indices_b) & (index_tensor < end_indices_b)
