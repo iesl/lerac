@@ -12,8 +12,8 @@ from IPython import embed
 
 EXTERNAL_BASE_DIR=('/home/ds-share/data2/users/rangell/lerac/coref_entity_linking/'
                    'experiments/mm_st21pv_long_entities/cluster_linking')
-EXP_ID='exp11'
-CKPT_ID='checkpoint-11163' 
+EXP_ID='tiny_exp'
+CKPT_ID='checkpoint-190' 
 
 # TODO:
 # - 
@@ -24,28 +24,30 @@ def load_pickle_file(fname):
 
 
 def load_data_files():
-    knn_index_fname =  os.path.join(
-            EXTERNAL_BASE_DIR,
-            EXP_ID,
-            CKPT_ID,
-            'knn_index.val.debug_results.pkl'
-    )
-    embed_fname =  os.path.join(
-            EXTERNAL_BASE_DIR,
-            EXP_ID,
-            CKPT_ID,
-            'embed.val.debug_results.pkl'
-    )
+    #knn_index_fname =  os.path.join(
+    #        EXTERNAL_BASE_DIR,
+    #        EXP_ID,
+    #        CKPT_ID,
+    #        'knn_index.val.debug_results.pkl'
+    #)
+    #embed_fname =  os.path.join(
+    #        EXTERNAL_BASE_DIR,
+    #        EXP_ID,
+    #        CKPT_ID,
+    #        'embed.val.debug_results.pkl'
+    #)
     concat_fname =  os.path.join(
             EXTERNAL_BASE_DIR,
             EXP_ID,
             CKPT_ID,
-            'concat.val.debug_results.pkl'
+            'concat.train.debug_results.pkl'
     )
-    metadata_fname = 'data/mm_st21pv_long_entities/cache/val/metadata.pt'
+    metadata_fname = 'data/mm_st21pv_long_entities/cache/train/metadata.pt'
 
-    knn_index_tuple = load_pickle_file(knn_index_fname)
-    embed_results_data = load_pickle_file(embed_fname)
+    #knn_index_tuple = load_pickle_file(knn_index_fname)
+    #embed_results_data = load_pickle_file(embed_fname)
+    knn_index_tuple = None
+    embed_results_data = None
     concat_results_data = load_pickle_file(concat_fname)
     metadata = torch.load(metadata_fname)
 
@@ -182,11 +184,11 @@ if __name__ == '__main__':
     print('Done.')
 
     results = SimpleNamespace()
-    knn_idxs, knn_X = knn_index_tuple
+    #knn_idxs, knn_X = knn_index_tuple
 
-    print('kNN index check...')
-    knn_index_check(metadata, knn_idxs, knn_X, results)
-    print('Done.')
+    #print('kNN index check...')
+    #knn_index_check(metadata, knn_idxs, knn_X, results)
+    #print('Done.')
 
     # compute list of lists of midxs for gold clusters analysis
     wdoc_clusters =  [
@@ -194,6 +196,9 @@ if __name__ == '__main__':
                 for doc in metadata.wdoc_clusters.values()
                     for cluster in doc.values()
     ]
+
+    embed()
+    exit()
 
 
     print('Computing accuracies...')

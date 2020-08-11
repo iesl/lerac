@@ -83,7 +83,7 @@ def eval_wdoc(args,
             metadata, linking_graphs
     )
     logger.info('Done.')
-    
+
     logger.info('Computing joint metrics...')
     slim_coref_graph = _get_global_maximum_spanning_tree(coref_graphs)
     joint_metrics = compute_joint_metrics(metadata,
@@ -173,10 +173,12 @@ def compute_linking_metrics(metadata, linking_graphs):
     for eidx, midx in zip(_row, _col):
         mention2cand[midx].append(eidx)
 
+    # midxs = list(metadata.midx2eidx.keys())
+    midxs = list(mention2cand.keys())
     recall_hits = 0
-    recall_total = len(metadata.midx2eidx)
+    recall_total = len(midxs)
     no_candidates = []
-    for midx in metadata.midx2eidx.keys():
+    for midx in midxs:
         cands = mention2cand.get(midx, None)
         if cands is None:
             no_candidates.append(midx)
@@ -184,19 +186,26 @@ def compute_linking_metrics(metadata, linking_graphs):
         if metadata.midx2eidx[midx] in cands:
             recall_hits += 1
 
-    # entity linking decision is max row (entities) from each col (mentions)
-    all_entity_choices = global_graph.argmax(axis=0)
-    all_entity_choices = np.asarray(all_entity_choices).reshape(-1,)
-    all_idxs = np.arange(all_entity_choices.size)
+    midxs = np.asarray(midxs)
 
-    mention_idx_mask = np.isin(all_idxs, list(mention2cand.keys()))
-    pred_eidxs = all_entity_choices[mention_idx_mask]
-    midxs = all_idxs[mention_idx_mask]
+    ### entity linking decision is max row (entities) from each col (mentions)
+    ##all_entity_choices = global_graph.argmax(axis=0)
+    ##all_entity_choices = np.asarray(all_entity_choices).reshape(-1,)
+    ##all_idxs = np.arange(all_entity_choices.size)
+
+    ##mention_idx_mask = np.isin(all_idxs, list(mention2cand.keys()))
+    ##pred_eidxs = all_entity_choices[mention_idx_mask]
+    ##midxs = all_idxs[mention_idx_mask]
 
     # build slim global linking graph for joint linking inference
     global_graph = global_graph.tocsc()
-    v_max = np.vectorize(lambda x : global_graph.getcol(x).max())
-    max_affinities = v_max(midxs)
+    def _get_slim_links(midx):
+        col_entries = global_graph.getcol(midx).tocoo()
+        if col_entries.nnz == 0:
+            return (-1, -np.inf)
+        return max(zip(col_entries.row, col_entries.data), key=lambda x : x[1])
+    v_max = np.vectorize(_get_slim_links)
+    pred_eidxs, max_affinities = v_max(midxs)
     slim_global_graph = coo_matrix((max_affinities, (pred_eidxs, midxs)),
                                    shape=global_graph.shape)
 
@@ -330,6 +339,7 @@ def build_sparse_affinity_graph(args,
                                 sub_trainer,
                                 build_coref_graph=False,
                                 build_linking_graph=False):
+
     assert build_coref_graph or build_linking_graph
 
     coref_graph = None
@@ -368,6 +378,7 @@ def build_sparse_affinity_graph(args,
         affinities = sub_trainer.get_edge_affinities(
                 coref_graph_edges, example_dir, knn_index
         )
+
         # affinities are gathered to only rank 0 process
         if get_rank() == 0:
             # build the graph
@@ -444,6 +455,7 @@ def build_sparse_affinity_graph(args,
             linking_graph = coo_matrix((affinities, linking_graph_edges),
                                           shape=(_sparse_num, _sparse_num))
 
+
     return coref_graph, linking_graph
 
 
@@ -494,7 +506,13 @@ def _get_global_maximum_spanning_tree(sparse_graph_list):
     # the MST weights back
     for g in sparse_graph_list:
         g.data *= -1.0
+
     msts = [minimum_spanning_tree(g).tocoo() for g in sparse_graph_list]
+
+    # NOTE: !!!! have to flip back in memory stuff !!!!
+    for g in sparse_graph_list:
+        g.data *= -1.0
+
     # make `msts` into MAXIMUM spanning trees 
     for mst in msts:
         mst.data *= -1.0
