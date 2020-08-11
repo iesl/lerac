@@ -447,7 +447,8 @@ class PairsConcatenationDataset(DistributedSafeDataset):
             seq_a,
             seq_b,
             2*self.args.max_seq_length,
-            self.args.tokenizer
+            self.args.tokenizer,
+            self.args.num_entities
         )
         fwd_input_ids, fwd_attention_mask, fwd_token_type_ids = fwd_feats
 
@@ -458,7 +459,8 @@ class PairsConcatenationDataset(DistributedSafeDataset):
             seq_a,
             seq_b,
             2*self.args.max_seq_length,
-            self.args.tokenizer
+            self.args.tokenizer,
+            self.args.num_entities
         )
         bwd_input_ids, bwd_attention_mask, bwd_token_type_ids = bwd_feats
 
@@ -500,8 +502,114 @@ class ScaledPairEmbeddingDataset(DistributedSafeDataset):
     For any pair with coeff style dataset.
     """
     def __init__(self, args, examples, example_dir):
-        super(ScaledPairDataset, self).__init__(args, examples)
+        super(ScaledPairEmbeddingDataset, self).__init__(args, examples)
         self.example_dir = example_dir
 
     def __getitem__(self, index):
-        raise NotImplementedError('TODO')
+        if index >= len(self.examples):
+            index = random.randint(0, len(self.examples) - 1)
+        coeff, idx_a, idx_b = self.examples[index]
+        example_idx = []
+        input_ids = []
+        attention_mask = []
+        token_type_ids = []
+
+        for _id in [idx_a, idx_b]:
+            _example_seq = _load_example(self.example_dir, _id).numpy().tolist()
+            _example_features = _create_bi_encoder_input(
+                _id, _example_seq, self.args.max_seq_length, self.args.tokenizer, self.args.num_entities
+            )
+            _input_ids, _attention_mask, _token_type_ids = _example_features
+
+            example_idx.append(torch.tensor(_id, dtype=torch.long))
+            input_ids.append(torch.tensor(_input_ids, dtype=torch.long))
+            attention_mask.append(
+                    torch.tensor(_attention_mask, dtype=torch.long))
+            token_type_ids.append(
+                    torch.tensor(_token_type_ids, dtype=torch.long))
+
+        return (coeff,
+                torch.stack(example_idx),
+                torch.stack(input_ids),
+                torch.stack(attention_mask),
+                torch.stack(token_type_ids))
+
+
+class ScaledPairConcatenationDataset(DistributedSafeDataset):
+    """
+    For any pair with coeff style dataset.
+    """
+    def __init__(self, args, examples, example_dir):
+        super(ScaledPairConcatenationDataset, self).__init__(args, examples)
+        self.example_dir = example_dir
+
+    def __getitem__(self, index):
+        if index >= len(self.examples):
+            index = random.randint(0, len(self.examples) - 1)
+        coeff, idx_a, idx_b = self.examples[index]
+        example_idx = []
+        example_idxs = []
+        input_ids = []
+        attention_mask = []
+        token_type_ids = []
+
+        # anchor, positive, and negative
+        seq_a = _load_example(self.example_dir, idx_a).numpy().tolist()
+        seq_b = _load_example(self.example_dir, idx_b).numpy().tolist()
+
+        # get the forward direction features
+        fwd_feats = _create_cross_encoder_input(
+            idx_a,
+            idx_b,
+            seq_a,
+            seq_b,
+            2*self.args.max_seq_length,
+            self.args.tokenizer,
+            self.args.num_entities
+        )
+        fwd_input_ids, fwd_attention_mask, fwd_token_type_ids = fwd_feats
+
+        # get the backward direction features
+        bwd_feats = _create_cross_encoder_input(
+            idx_a,
+            idx_b,
+            seq_a,
+            seq_b,
+            2*self.args.max_seq_length,
+            self.args.tokenizer,
+            self.args.num_entities
+        )
+        bwd_input_ids, bwd_attention_mask, bwd_token_type_ids = bwd_feats
+
+        # pack forward and backward features together
+        example_idxs.append(
+            torch.stack(
+                (torch.tensor((idx_a, idx_b), dtype=torch.long),
+                 torch.tensor((idx_b, idx_a), dtype=torch.long))
+            )
+        )
+        input_ids.append(
+            torch.stack(
+                (torch.tensor(fwd_input_ids, dtype=torch.long),
+                 torch.tensor(bwd_input_ids, dtype=torch.long))
+            )
+        )
+        attention_mask.append(
+            torch.stack(
+                (torch.tensor(fwd_attention_mask, dtype=torch.long),
+                 torch.tensor(bwd_attention_mask, dtype=torch.long))
+            )
+        )
+        token_type_ids.append(
+            torch.stack(
+                (torch.tensor(fwd_token_type_ids, dtype=torch.long),
+                 torch.tensor(bwd_token_type_ids, dtype=torch.long))
+            )
+        )
+
+        # this is for correcting dimensionality
+        return (coeff,
+                torch.stack(example_idxs),
+                torch.stack(input_ids),
+                torch.stack(attention_mask),
+                torch.stack(token_type_ids))

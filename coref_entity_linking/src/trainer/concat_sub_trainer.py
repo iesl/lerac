@@ -7,11 +7,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
+import random
 
 from data.datasets import PairsConcatenationDataset
 from data.dataloaders import (PairsConcatenationDataLoader,
                               TripletConcatenationDataLoader,
-                              SoftmaxConcatenationDataLoader)
+                              SoftmaxConcatenationDataLoader,
+                              ScaledPairsConcatenationDataLoader)
 from utils.comm import get_rank, all_gather, synchronize
 from utils.misc import flatten, unique
 
@@ -38,6 +40,8 @@ class ConcatenationSubTrainer(object):
             return self._train_triplet(dataset_list, metadata)
         elif args.training_method == 'softmax':
             return self._train_softmax(dataset_list, metadata)
+        elif args.training_method == 'threshold':
+            return self._train_threshold(dataset_list, metadata)
         else:
             raise ValueError('unsupported training_method')
 
@@ -60,16 +64,19 @@ class ConcatenationSubTrainer(object):
             dataloader = TripletConcatenationDataLoader(args, dataset)
             for batch in dataloader:
                 batch = tuple(t.to(args.device) for t in batch)
-                inputs = {'input_ids':      batch[1],
+                m_e_mask = torch.any(torch.any(batch[0] < args.num_entities, -1), -1).to(args.device)
+                inputs = {'m_e_mask':       m_e_mask,
+                          'input_ids':      batch[1],
                           'attention_mask': batch[2],
-                          'token_type_ids': batch[3],
-                          'concat_input': True}
+                          'token_type_ids': batch[3]}
                 outputs = self.model(**inputs)
+
                 scores = torch.mean(outputs, -1)
-                scores = torch.sigmoid(scores)
 
                 if args.training_method == 'triplet_max_margin':
                     # max-margin
+
+
                     per_triplet_loss = F.relu(
                             scores[:, 1]   # negative dot products
                             - scores[:, 0] # positive dot products
@@ -100,14 +107,13 @@ class ConcatenationSubTrainer(object):
                 pos_e_neg_e_losses.extend(_detached_per_triplet_loss[pos_e_neg_e_mask].numpy().tolist())
                 loss = torch.mean(per_triplet_loss)
                 loss.backward()
-
-                torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(),
-                        args.max_grad_norm
-                )
-                self.optimizer.step()
-                self.scheduler.step()
-                self.model.zero_grad()
+            torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    args.max_grad_norm
+            )
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
             time_per_dataset.append(time.time() - _dataset_start_time)
 
         gathered_data = all_gather({
@@ -147,30 +153,27 @@ class ConcatenationSubTrainer(object):
             synchronize()
             return None
 
+
     def _train_softmax(self, dataset_list, metadata):
         args = self.args
 
         losses = [] 
         time_per_dataset = []
         dataset_sizes = []
-        pos_m_neg_m_losses = []
-        pos_m_neg_e_losses = []
-        pos_e_neg_m_losses = []
-        pos_e_neg_e_losses = []
 
         self.model.train()
         self.model.zero_grad()
-        criterion = nn.CrossEntropyLoss()
         for dataset in dataset_list:
             _dataset_start_time = time.time()
             dataset_sizes.append(len(dataset))
             dataloader = SoftmaxConcatenationDataLoader(args, dataset)
             for batch in dataloader:
                 batch = tuple(t.to(args.device) for t in batch)
-                inputs = {'input_ids':      batch[1],
+                m_e_mask = torch.any(torch.any(batch[0] < args.num_entities, -1), -1).reshape(-1,).to(args.device)
+                inputs = {'m_e_mask':       m_e_mask,
+                          'input_ids':      batch[1],
                           'attention_mask': batch[2],
-                          'token_type_ids': batch[3],
-                          'concat_input': True}
+                          'token_type_ids': batch[3]}
                 outputs = self.model(**inputs)
                 scores = torch.mean(outputs, -1)
                 target = torch.zeros(scores.shape[0], dtype=torch.long).cuda()
@@ -201,6 +204,57 @@ class ConcatenationSubTrainer(object):
             synchronize()
             return None
 
+    def _train_threshold(self, dataset_list, metadata):
+        args = self.args
+
+        losses = [] 
+        time_per_dataset = []
+        dataset_sizes = []
+
+        self.model.train()
+        self.model.zero_grad()
+        random.shuffle(dataset_list)
+        for dataset in dataset_list:
+            _dataset_start_time = time.time()
+            dataset_sizes.append(len(dataset))
+            dataloader = ScaledPairsConcatenationDataLoader(args, dataset)
+            agg_loss = 0.0
+            for batch in dataloader:
+                batch = tuple(t.to(args.device) for t in batch)
+                m_e_mask = torch.any(torch.any(batch[1] < args.num_entities, -1), -1).reshape(-1,).to(args.device)
+                inputs = {'m_e_mask':       m_e_mask,
+                          'input_ids':      batch[2],
+                          'attention_mask': batch[3],
+                          'token_type_ids': batch[4]}
+                outputs = self.model(**inputs)
+                scores = torch.mean(outputs, -1)
+                loss = torch.sum(F.relu(args.margin - (batch[0] * scores)))
+                agg_loss += loss.item()
+                loss.backward()
+
+            losses.append(agg_loss)
+            torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    args.max_grad_norm
+            )
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
+            time_per_dataset.append(time.time() - _dataset_start_time)
+
+        gathered_data = all_gather({
+                'losses' : losses,
+        })
+
+        if get_rank() == 0:
+            losses = flatten([d['losses'] for d in gathered_data])
+            loss = np.mean(losses)
+
+            synchronize()
+            return { 'concat_loss' : loss }
+        else:
+            synchronize()
+            return None
 
     def get_edge_affinities(self, edges, example_dir, knn_index):
         args = self.args
@@ -211,20 +265,28 @@ class ConcatenationSubTrainer(object):
         for batch in dataloader:
             with torch.no_grad():
                 batch = tuple(t.to(args.device) for t in batch)
-                inputs = {'input_ids':      batch[1],
+                m_e_mask = torch.any(torch.any(batch[0] < args.num_entities, -1), -1).reshape(-1,).to(args.device)
+                inputs = {'m_e_mask':       m_e_mask,
+                          'input_ids':      batch[1],
                           'attention_mask': batch[2],
-                          'token_type_ids': batch[3],
-                          'concat_input': True}
+                          'token_type_ids': batch[3]}
                 outputs = self.model(**inputs)
+
                 scores = torch.mean(outputs, -1).squeeze(-1)
                 scores = scores.cpu().numpy().tolist()
 
                 idx_edge_pairs = batch[0].squeeze(1)[:,:,0].cpu().numpy()
                 idx_edge_pairs = [tuple(p) for p in idx_edge_pairs.tolist()]
 
-                edge2affinity.update(
-                        {k : v for k, v in zip(idx_edge_pairs, scores)}
-                )
+                try:
+                    edge2affinity.update(
+                            {k : v for k, v in zip(idx_edge_pairs, scores)}
+                    )
+                except:
+                    if get_rank() == 0:
+                        embed()
+                    synchronize()
+                    exit()
 
         gathered_edge2affinity = all_gather(edge2affinity)
 

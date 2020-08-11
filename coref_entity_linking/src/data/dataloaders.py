@@ -122,3 +122,31 @@ class PairsConcatenationDataLoader(DataLoader):
                 num_workers=args.num_dataloader_workers,
                 pin_memory=True,
         )
+
+
+class ScaledPairsEmbeddingDataLoader(DataLoader):
+    """
+    Custom DataLoader for ScaledPairsEmbeddingDataset.
+    """
+    def __init__(self, args, dataset):
+        super(ScaledPairsEmbeddingDataLoader, self).__init__(
+                dataset,
+                sampler=_custom_distributed_sampler(dataset),
+                batch_size=max(args.train_batch_size, 1),
+                num_workers=args.num_dataloader_workers,
+                pin_memory=True,
+        )
+
+
+class ScaledPairsConcatenationDataLoader(DataLoader):
+    """
+    Custom DataLoader for ScaledPairsConcatenationDataset.
+    """
+    def __init__(self, args, dataset):
+        super(ScaledPairsConcatenationDataLoader, self).__init__(
+                dataset,
+                sampler=_custom_distributed_sampler(dataset),
+                batch_size=max(args.train_batch_size // 2, 1),
+                num_workers=args.num_dataloader_workers,
+                pin_memory=True,
+        )

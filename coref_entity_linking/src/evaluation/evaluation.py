@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 def eval_wdoc(args,
               example_dir,
               metadata,
-              knn_index,
               sub_trainer,
               save_fname=None):
     assert save_fname != None
@@ -34,12 +33,15 @@ def eval_wdoc(args,
     logger.info('Building within doc sparse graphs...')
     doc_level_graphs = []
     per_doc_coref_clusters = []
-    for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
-        per_doc_coref_clusters.append(
-                [[x for x in v if x != k] for k, v in doc_clusters.items()]
-        )
-        doc_mentions = np.asarray([x for k, v in doc_clusters.items()
-                                        for x in v if x != k])
+    #for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
+    #    per_doc_coref_clusters.append(
+    #            [[x for x in v if x != k] for k, v in doc_clusters.items()]
+    #    )
+    #    doc_mentions = np.asarray([x for k, v in doc_clusters.items()
+    #                                    for x in v if x != k])
+    for doc_clusters in tqdm([args._tiny_exp_clusters], disable=(get_rank() != 0)):
+        doc_mentions = np.asarray([x for v in doc_clusters
+                                        for x in v if x >= args.num_entities])
         doc_mentions = np.sort(doc_mentions)
         doc_level_graphs.append(
             build_sparse_affinity_graph(
@@ -47,12 +49,16 @@ def eval_wdoc(args,
                 doc_mentions,
                 example_dir,
                 metadata,
-                knn_index,
+                None,
                 sub_trainer,
                 build_coref_graph=True,
                 build_linking_graph=True
             )
         )
+
+    # FIXME: for tiny experiment
+    per_doc_coref_clusters =  [[[x for x in v if x >= args.num_entities] for v in args._tiny_exp_clusters]]
+
     logger.info('Done.')
 
     # don't need other processes at this point
@@ -120,9 +126,14 @@ def compute_coref_metrics(gold_coref_clusters, coref_graphs, coref_threshold):
     # compute metrics and choose threshold is one isn't specified
     if coref_threshold is None:
         logger.info('Generating candidate thresholds...')
-        kmeans = KMeans(n_clusters=1000, random_state=0)
-        kmeans.fit(global_maximum_spanning_tree.data.reshape(-1, 1))
-        candidate_thresholds = kmeans.cluster_centers_.reshape(-1,).tolist()
+        _edge_weights = global_maximum_spanning_tree.data.reshape(-1, 1)
+        _num_thresholds = 1000
+        if _edge_weights.shape[0] < _num_thresholds:
+            candidate_thresholds = _edge_weights.reshape(-1,).tolist()
+        else:
+            kmeans = KMeans(n_clusters=_num_thresholds, random_state=0)
+            kmeans.fit(global_maximum_spanning_tree.data.reshape(-1, 1))
+            candidate_thresholds = kmeans.cluster_centers_.reshape(-1,).tolist()
         logger.info('Done.')
 
         logger.info('Choosing threshold...')
@@ -192,8 +203,12 @@ def compute_linking_metrics(metadata, linking_graphs):
     # compute linking accuracy
     linking_hits, linking_total = 0, 0
     pred_midx2eidx = {m : e for m, e in zip(midxs, pred_eidxs)}
-    for midx, true_eidx in metadata.midx2eidx.items():
-        if true_eidx == pred_midx2eidx.get(midx, -1):
+    #for midx, true_eidx in metadata.midx2eidx.items():
+    #    if true_eidx == pred_midx2eidx.get(midx, -1):
+    #        linking_hits += 1
+    #    linking_total += 1
+    for midx, pred_eidx in pred_midx2eidx.items():
+        if pred_eidx == metadata.midx2eidx[midx]:
             linking_hits += 1
         linking_total += 1
 
@@ -291,8 +306,12 @@ def compute_joint_metrics(metadata, joint_graphs):
             pred_midx2eidx[midx] = eidx
 
     joint_hits, joint_total = 0, 0
-    for midx, true_eidx in metadata.midx2eidx.items():
-        if pred_midx2eidx.get(midx, -1) == true_eidx:
+    #for midx, true_eidx in metadata.midx2eidx.items():
+    #    if pred_midx2eidx.get(midx, -1) == true_eidx:
+    #        joint_hits += 1
+    #    joint_total += 1
+    for midx, pred_eidx in pred_midx2eidx.items():
+        if pred_eidx == metadata.midx2eidx[midx]:
             joint_hits += 1
         joint_total += 1
 
@@ -318,11 +337,20 @@ def build_sparse_affinity_graph(args,
     if get_rank() == 0:
         mention_knn = None
         if build_coref_graph or args.available_entities == 'knn_candidates':
-            # get all of the mention kNN
-            mention_knn = knn_index.get_knn_limited_index(
-                    midxs, include_index_idxs=midxs, k=args.k+1
-            )
-            mention_knn = mention_knn[:,1:]
+            ## get all of the mention kNN
+            #mention_knn = knn_index.get_knn_limited_index(
+            #        midxs, include_index_idxs=midxs, k=args.k+1
+            #)
+            #mention_knn = mention_knn[:,1:]
+            midx2doc = {}
+            doc2midx = defaultdict(list)
+            for doc_id, wdoc_clusters in metadata.wdoc_clusters.items():
+                doc2midx[doc_id] = flatten(list(wdoc_clusters.values()))
+                for midx in doc2midx[doc_id]:
+                    midx2doc[midx] = doc_id
+            mention_knn = []
+            for midx in midxs:
+                mention_knn.append([x for x in doc2midx[midx2doc[midx]] if x != midx and x >= args.num_entities])
 
     if build_coref_graph:
         # list of edges for sparse graph we will build

@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import copy
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -86,45 +87,74 @@ class VersatileModel(nn.Module):
         config.end_entity_id = self.tokenizer.convert_tokens_to_ids(END_ENTITY_HGHLGHT_TOKEN)
         config.cls_id = self.tokenizer.convert_tokens_to_ids(CLS_TOKEN)
         config.sep_id = self.tokenizer.convert_tokens_to_ids(SEP_TOKEN)
-        config.embed_pooling_strategy = args.embed_pooling_strategy
-        config.concat_pooling_strategy = args.concat_pooling_strategy
-        config.seq_embed_dim = args.seq_embed_dim
-        self.model = VersatileBertModel.from_pretrained(
+
+        m_e_config = copy.deepcopy(config)
+        m_e_config.concat_pooling_strategy = 'cls'
+        self.m_e_model = BertSequenceScoringModel.from_pretrained(
                 args.model_name_or_path,
                 from_tf=bool('.ckpt' in args.model_name_or_path),
-                config=config,
+                config=m_e_config,
+                cache_dir=args.cache_dir if args.cache_dir else None)
+
+        m_m_config = copy.deepcopy(config)
+        m_m_config.concat_pooling_strategy = 'pool_highlighted_outputs'
+        self.m_m_model = BertSequenceScoringModel.from_pretrained(
+                args.model_name_or_path,
+                from_tf=bool('.ckpt' in args.model_name_or_path),
+                config=m_m_config,
                 cache_dir=args.cache_dir if args.cache_dir else None)
 
     def _load_pretrained_model(self):
         args = self.args
         self.tokenizer = BertTokenizer.from_pretrained(
                 os.path.join(args.trained_model_dir, self.name + 'model'))
-        self.model = VersatileBertModel.from_pretrained(
-                os.path.join(args.trained_model_dir, self.name + 'model'))
+        self.m_e_model = BertSequenceScoringModel.from_pretrained(
+                os.path.join(args.trained_model_dir, self.name + 'model', 'm_e_model'))
+        self.m_m_model = BertSequenceScoringModel.from_pretrained(
+                os.path.join(args.trained_model_dir, self.name + 'model', 'm_m_model'))
 
     def save_model(self, suffix=None):
         # suffix should be a string that describes the model, often a checkpoint
         assert suffix is not None
         args = self.args
         save_dir = os.path.join(args.output_dir, suffix, self.name + 'model')
+        m_e_save_dir = os.path.join(save_dir, 'm_e_model')
+        m_m_save_dir = os.path.join(save_dir, 'm_m_model')
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        self.model.save_pretrained(save_dir)
+        if not os.path.exists(m_e_save_dir):
+            os.makedirs(m_e_save_dir)
+        if not os.path.exists(m_m_save_dir):
+            os.makedirs(m_m_save_dir)
+        self.m_e_model.save_pretrained(m_e_save_dir)
+        self.m_m_model.save_pretrained(m_m_save_dir)
         self.tokenizer.save_pretrained(save_dir)
 
     def forward(self,
+                m_e_mask=None,
                 input_ids=None,
                 attention_mask=None,
                 token_type_ids=None,
-                concat_input=False,
                 head_mask=None,
                 inputs_embeds=None,
                 evaluate=False):
-        outputs = self.model(input_ids=input_ids,
-                                attention_mask=attention_mask,
-                                token_type_ids=token_type_ids,
-                                concat_input=concat_input,
-                                evaluate=evaluate)
+        
+        batch_size, num_seq, sym_dim, seq_len = input_ids.shape
+        outputs = torch.zeros((batch_size*num_seq, 1, sym_dim)).to(self.args.device)
+        m_e_mask = m_e_mask.reshape(batch_size*num_seq,)
+        input_ids = input_ids.reshape(batch_size*num_seq, 1, sym_dim, seq_len)
+        attention_mask = attention_mask.reshape(batch_size*num_seq, 1, sym_dim, seq_len)
+        token_type_ids = token_type_ids.reshape(batch_size*num_seq, 1, sym_dim, seq_len)
+        outputs[m_e_mask] = self.m_e_model(input_ids=input_ids[m_e_mask],
+                                           attention_mask=attention_mask[m_e_mask],
+                                           token_type_ids=token_type_ids[m_e_mask],
+                                           evaluate=evaluate)
+        outputs[~m_e_mask] = self.m_m_model(input_ids=input_ids[~m_e_mask],
+                                            attention_mask=attention_mask[~m_e_mask],
+                                            token_type_ids=token_type_ids[~m_e_mask],
+                                            evaluate=evaluate)
+        outputs = outputs.reshape((batch_size, num_seq, sym_dim))
+        
         return outputs
 
 
@@ -319,6 +349,102 @@ class SequenceEmbeddingModel(BertPreTrainedModel):
         return seq_embedding
 
 
+class BertSequenceScoringModel(BertPreTrainedModel):
+
+    def __init__(self, config):
+        super(BertSequenceScoringModel, self).__init__(config)
+        self.config = config
+        self.start_mention_id = config.start_mention_id
+        self.end_mention_id = config.end_mention_id
+        self.start_entity_id = config.start_entity_id
+        self.end_entity_id = config.end_entity_id
+        self.cls_id = config.cls_id
+        self.sep_id = config.sep_id
+
+        self.bert = BertModel(config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+        # for concatenation pool_highlighted_outputs mode
+        if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
+            self.concatenation_pool_layer1 = nn.Linear(2*config.hidden_size, config.hidden_size)
+            self.concatenation_pool_layer2 = nn.Linear(config.hidden_size, config.hidden_size)
+            self.concatenation_pool_layer3 = nn.Linear(config.hidden_size, 1)
+
+        # for concatenation cls mode
+        if self.config.concat_pooling_strategy == 'cls':
+            self.concatenation_cls_layer1 = nn.Linear(config.hidden_size, config.hidden_size)
+            self.concatenation_cls_layer2 = nn.Linear(config.hidden_size, 1)
+
+        self.init_weights()
+
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        evaluate=False
+    ):
+
+        with torch.no_grad():
+            batch_size, num_seq, sym_dim, seq_len = input_ids.shape
+
+            input_ids = input_ids.reshape(-1, seq_len)
+            attention_mask = attention_mask.reshape(-1, seq_len)
+            token_type_ids = token_type_ids.reshape(-1, seq_len)
+
+            if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
+                index_tensor = torch.arange(input_ids.shape[1])
+                index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
+                index_tensor = index_tensor.to(input_ids.device)
+
+                start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
+                                              as_tuple=False)[:,1:]
+                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id),
+                                            as_tuple=False)[:,1:]
+
+                start_indices_a = start_indices[::2,:]
+                end_indices_a = end_indices[::2,:]
+                start_indices_b = start_indices[1::2,:]
+                end_indices_b = end_indices[1::2,:]
+                
+                mask_a = (index_tensor > start_indices_a) & (index_tensor < end_indices_a)
+                mask_b = (index_tensor > start_indices_b) & (index_tensor < end_indices_b)
+                mask_a.unsqueeze_(-1)
+                mask_b.unsqueeze_(-1)
+
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+        )
+
+        if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
+            pooled_output_a = (torch.sum(outputs[0] * mask_a, 1)
+                             / torch.sum(mask_a, 1))
+            pooled_output_a = self.dropout(pooled_output_a)
+            pooled_output_b = (torch.sum(outputs[0] * mask_b, 1)
+                             / torch.sum(mask_b, 1))
+            pooled_output_b = self.dropout(pooled_output_b)
+            pooled_output = torch.cat((pooled_output_a, pooled_output_b), dim=1)
+            output = F.relu(self.concatenation_pool_layer1(pooled_output))
+            output = F.relu(self.concatenation_pool_layer2(output))
+            output = self.concatenation_pool_layer3(output)
+            output = output.reshape(batch_size, num_seq, sym_dim)
+        elif self.config.concat_pooling_strategy == 'cls':
+            output = outputs[0][:, 0, :]
+            output = F.relu(self.concatenation_cls_layer1(output))
+            output = self.concatenation_cls_layer2(output)
+            output = output.reshape(batch_size, num_seq, sym_dim)
+
+        return output
+
+
 class VersatileBertModel(BertPreTrainedModel):
 
     def __init__(self, config):
@@ -337,10 +463,14 @@ class VersatileBertModel(BertPreTrainedModel):
         # for embedding mode
         self.embedding_layer = nn.Linear(config.hidden_size, config.seq_embed_dim)
 
-        # for concatenation mode
-        self.concatenation_layer1 = nn.Linear(2*config.hidden_size, config.hidden_size)
-        self.concatenation_layer2 = nn.Linear(config.hidden_size, config.hidden_size)
-        self.concatenation_layer3 = nn.Linear(config.hidden_size, 1)
+        # for concatenation pool_highlighted_outputs mode
+        self.concatenation_pool_layer1 = nn.Linear(2*config.hidden_size, config.hidden_size)
+        self.concatenation_pool_layer2 = nn.Linear(config.hidden_size, config.hidden_size)
+        self.concatenation_pool_layer3 = nn.Linear(config.hidden_size, 1)
+
+        # for concatenation cls mode
+        self.concatenation_cls_layer1 = nn.Linear(config.hidden_size, config.hidden_size)
+        self.concatenation_cls_layer2 = nn.Linear(config.hidden_size, 1)
 
         self.init_weights()
 
@@ -451,28 +581,27 @@ class VersatileBertModel(BertPreTrainedModel):
             attention_mask = attention_mask.reshape(-1, seq_len)
             token_type_ids = token_type_ids.reshape(-1, seq_len)
 
-            if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
-                index_tensor = torch.arange(input_ids.shape[1])
-                index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
-                index_tensor = index_tensor.to(input_ids.device)
+            index_tensor = torch.arange(input_ids.shape[1])
+            index_tensor = index_tensor.repeat(input_ids.shape[0], 1)
+            index_tensor = index_tensor.to(input_ids.device)
 
-                #_start_indices = (input_ids == self.start_mention_id).nonzero()
-                #_end_indices = (input_ids == self.end_mention_id).nonzero()
+            #_start_indices = (input_ids == self.start_mention_id).nonzero()
+            #_end_indices = (input_ids == self.end_mention_id).nonzero()
 
-                start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
-                                              as_tuple=False)[:,1:]
-                end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id),
-                                            as_tuple=False)[:,1:]
+            start_indices = torch.nonzero((input_ids == self.start_mention_id) | (input_ids == self.start_entity_id),
+                                          as_tuple=False)[:,1:]
+            end_indices = torch.nonzero((input_ids == self.end_mention_id) | (input_ids == self.end_entity_id),
+                                        as_tuple=False)[:,1:]
 
-                start_indices_a = start_indices[::2,:]
-                end_indices_a = end_indices[::2,:]
-                start_indices_b = start_indices[1::2,:]
-                end_indices_b = end_indices[1::2,:]
-                
-                mask_a = (index_tensor > start_indices_a) & (index_tensor < end_indices_a)
-                mask_b = (index_tensor > start_indices_b) & (index_tensor < end_indices_b)
-                mask_a.unsqueeze_(-1)
-                mask_b.unsqueeze_(-1)
+            start_indices_a = start_indices[::2,:]
+            end_indices_a = end_indices[::2,:]
+            start_indices_b = start_indices[1::2,:]
+            end_indices_b = end_indices[1::2,:]
+            
+            mask_a = (index_tensor > start_indices_a) & (index_tensor < end_indices_a)
+            mask_b = (index_tensor > start_indices_b) & (index_tensor < end_indices_b)
+            mask_a.unsqueeze_(-1)
+            mask_b.unsqueeze_(-1)
 
         outputs = self.bert(
             input_ids,
@@ -483,22 +612,22 @@ class VersatileBertModel(BertPreTrainedModel):
             inputs_embeds=inputs_embeds,
         )
 
-        if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
-            pooled_output_a = (torch.sum(outputs[0] * mask_a, 1)
-                             / torch.sum(mask_a, 1))
-            pooled_output_a = self.dropout(pooled_output_a)
-            pooled_output_b = (torch.sum(outputs[0] * mask_b, 1)
-                             / torch.sum(mask_b, 1))
-            pooled_output_b = self.dropout(pooled_output_b)
-            pooled_output = torch.cat((pooled_output_a, pooled_output_b), dim=1)
-            output = F.gelu(self.concatenation_layer1(pooled_output))
-            output = F.gelu(self.concatenation_layer2(output))
-            output = self.concatenation_layer3(output)
-            output = output.reshape(batch_size, num_seq, sym_dim)
+        #if self.config.concat_pooling_strategy == 'pool_highlighted_outputs':
+        pooled_output_a = (torch.sum(outputs[0] * mask_a, 1)
+                         / torch.sum(mask_a, 1))
+        pooled_output_a = self.dropout(pooled_output_a)
+        pooled_output_b = (torch.sum(outputs[0] * mask_b, 1)
+                         / torch.sum(mask_b, 1))
+        pooled_output_b = self.dropout(pooled_output_b)
+        pooled_output = torch.cat((pooled_output_a, pooled_output_b), dim=1)
+        output = F.relu(self.concatenation_pool_layer1(pooled_output))
+        output = F.relu(self.concatenation_pool_layer2(output))
+        output = self.concatenation_pool_layer3(output)
+        pooled_hghlght_output = output.reshape(batch_size, num_seq, sym_dim)
             #output = torch.sigmoid(output)
-        elif self.config.concat_pooling_strategy == 'cls':
-            output = outputs[0][:, 0, :]
-            output = torch.tanh(self.concatenation_layer2(output))
-            output = self.concatenation_layer3(output)
-            output = output.reshape(batch_size, num_seq, sym_dim)
-        return output
+        #elif self.config.concat_pooling_strategy == 'cls':
+        cls_output = outputs[0][:, 0, :]
+        cls_output = F.relu(self.concatenation_cls_layer1(cls_output))
+        cls_output = self.concatenation_cls_layer2(cls_output)
+        cls_output = cls_output.reshape(batch_size, num_seq, sym_dim)
+        return cls_output, pooled_hghlght_output

@@ -9,7 +9,9 @@ from random import shuffle
 from data.datasets import (SoftmaxEmbeddingDataset,
                            SoftmaxConcatenationDataset,
                            TripletEmbeddingDataset,
-                           TripletConcatenationDataset)
+                           TripletConcatenationDataset,
+                           ScaledPairEmbeddingDataset,
+                           ScaledPairConcatenationDataset)
 from utils.comm import get_rank, synchronize
 
 from IPython import embed
@@ -98,10 +100,6 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
         return (embed_dataset_list, concat_dataset_list), dataset_metrics
 
 
-class SigmoidDatasetBuilder(SupervisedClusteringDatasetBuilder):
-    pass
-
-
 class SoftmaxDatasetBuilder(SupervisedClusteringDatasetBuilder):
 
     def __init__(self, args):
@@ -171,8 +169,54 @@ class SoftmaxDatasetBuilder(SupervisedClusteringDatasetBuilder):
         return (embed_dataset_list, concat_dataset_list), dataset_metrics
 
 
-class AccumMaxMarginDatasetBuilder(SupervisedClusteringDatasetBuilder):
-    pass
+class ThresholdDatasetBuilder(SupervisedClusteringDatasetBuilder):
+
+    def __init__(self, args):
+        super(ThresholdDatasetBuilder, self).__init__(args)
+    
+    def __call__(self, clusters_mx, sparse_graph, metadata):
+        args = self.args
+
+        # get pairs_collection
+        pairs_collection = self.pairs_creator(
+                clusters_mx, sparse_graph, metadata
+        )
+
+        # build datasets
+        mention_entity_triplets = 0
+        mention_mention_triplets = 0
+        embed_dataset_list = []
+        concat_dataset_list = []
+        for cluster_pairs_list in pairs_collection:
+            scaled_pairs = []
+            for joint_collection in cluster_pairs_list:
+                anchor = joint_collection['anchor']
+                pos_list = joint_collection['pos']
+                neg_list = joint_collection['neg']
+
+                scaled_pairs.extend([(1.0, anchor, p) for p in pos_list])
+                scaled_pairs.extend([(-1.0, anchor, n) for n in neg_list])
+
+            assert len(scaled_pairs) > 0
+
+            embed_dataset_list.append(
+                    ScaledPairEmbeddingDataset(
+                        args,
+                        scaled_pairs,
+                        args.train_cache_dir
+                    )
+            )
+            concat_dataset_list.append(
+                    ScaledPairConcatenationDataset(
+                        args,
+                        scaled_pairs,
+                        args.train_cache_dir
+                    )
+            )
+
+        dataset_metrics = {}
+
+        return (embed_dataset_list, concat_dataset_list), dataset_metrics
 
 
 class PairsCreator(ABC):
@@ -288,6 +332,7 @@ class MstPairsCreator(PairsCreator):
         pos_b = _data[local_pos_b]
         _pos_edges = np.vstack((pos_a, pos_b)).T.tolist()
         pos_mask = np.asarray([x in _pos_edges for x in all_edges.T.tolist()])
+                
         neg_mask = ~pos_mask
         pos_edges = all_edges[:, pos_mask]
         #pos_edges = np.concatenate((pos_edges, pos_edges[[1, 0]]), axis=1).T

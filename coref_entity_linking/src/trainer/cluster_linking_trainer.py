@@ -10,9 +10,8 @@ from tqdm import tqdm, trange
 import random
 
 from clustering import (TripletDatasetBuilder,
-                        SigmoidDatasetBuilder,
                         SoftmaxDatasetBuilder,
-                        AccumMaxMarginDatasetBuilder)
+                        ThresholdDatasetBuilder)
 from data.datasets import MetaClusterDataset, InferenceEmbeddingDataset
 from data.dataloaders import (MetaClusterDataLoader,
                               InferenceEmbeddingDataLoader)
@@ -50,18 +49,22 @@ class ClusterLinkingTrainer(Trainer):
 
         # create knn_index and supervised clustering dataset builder
         if args.do_train or args.do_train_eval:
-            self.create_knn_index('train')
+            #self.create_knn_index('train')
             if args.do_train:
                 if 'triplet' in args.training_method:
                     self.dataset_builder = TripletDatasetBuilder(args)
                 elif args.training_method == 'softmax':
                     self.dataset_builder = SoftmaxDatasetBuilder(args)
+                elif args.training_method == 'threshold':
+                    self.dataset_builder = ThresholdDatasetBuilder(args)
                 else:
                     raise ValueError('unsupported training_method')
         if args.do_val: # or args.evaluate_during_training:
-            self.create_knn_index('val')
+            pass
+            #self.create_knn_index('val')
         if args.do_test:
-            self.create_knn_index('test')
+            pass
+            #self.create_knn_index('test')
     
     def create_models(self):
         logger.info('Creating models.')
@@ -111,7 +114,12 @@ class ClusterLinkingTrainer(Trainer):
         else:
             raise ValueError('Invalid clustering_domain')
 
-        self.train_dataset = MetaClusterDataset(clusters)
+        logger.warning('!!!! Using reduced dataset intended for tiny experiment !!!!')
+        args._tiny_exp_clusters = clusters[:300]
+        args._tiny_exp_examples = flatten(args._tiny_exp_clusters)
+
+        #self.train_dataset = MetaClusterDataset(clusters)
+        self.train_dataset = MetaClusterDataset(args._tiny_exp_clusters)
         self.train_dataloader = MetaClusterDataLoader(
                 args, self.train_dataset)
 
@@ -130,6 +138,10 @@ class ClusterLinkingTrainer(Trainer):
         else:
             raise ValueError('Invalid available_entities')
         examples = unique(examples)
+
+        logger.warning('!!!! Using reduced dataset intended for tiny experiment !!!!')
+        examples = args._tiny_exp_examples + list(filter(lambda x : x < self.train_metadata.num_entities, examples))
+
         self.train_eval_dataset = InferenceEmbeddingDataset(
                 args, examples, args.train_cache_dir)
         self.train_eval_dataloader = InferenceEmbeddingDataLoader(
@@ -185,6 +197,53 @@ class ClusterLinkingTrainer(Trainer):
                     name='test'
             )
 
+    def _build_temp_sparse_graph(self, clusters_mx, per_example_negs):
+        args = self.args
+
+        # get all of the unique examples 
+        examples = clusters_mx.data.tolist()
+        examples.extend(flatten(per_example_negs.tolist()))
+        examples = unique(examples)
+        examples = list(filter(lambda x : x >= 0, examples))
+
+        sparse_graph = None
+        if get_rank() == 0:
+            ## make the list of pairs of dot products we need
+            _row = clusters_mx.row
+            # positives:
+            local_pos_a, local_pos_b = np.where(
+                    np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
+            )
+            pos_a = clusters_mx.data[local_pos_a]
+            pos_b = clusters_mx.data[local_pos_b]
+            # negatives:
+            local_neg_a = np.tile(
+                np.arange(per_example_negs.shape[0])[:, np.newaxis],
+                (1, per_example_negs.shape[1])
+            ).flatten()
+            neg_a = clusters_mx.data[local_neg_a]
+            neg_b = per_example_negs.flatten()
+
+            neg_mask = (neg_b != -1)
+            neg_a = neg_a[neg_mask]
+            neg_b = neg_b[neg_mask]
+
+            # create subset of the sparse graph we care about
+            a = np.concatenate((pos_a, neg_a), axis=0)
+            b = np.concatenate((pos_b, neg_b), axis=0)
+            edges = list(zip(a, b))
+            affinities = [0.0 for i, j in edges]
+
+            # convert to coo_matrix
+            edges = np.asarray(edges).T
+            affinities = np.asarray(affinities)
+            _sparse_num = np.max(edges) + 1
+            sparse_graph = coo_matrix((affinities, edges),
+                                      shape=(_sparse_num, _sparse_num))
+
+        synchronize()
+        return sparse_graph
+
     def train_step(self, batch):
         args = self.args
 
@@ -192,7 +251,9 @@ class ClusterLinkingTrainer(Trainer):
         clusters_mx, per_example_negs = batch
 
         # compute scores using up-to-date model
-        sparse_graph = self.embed_sub_trainer.compute_scores_for_inference(
+        #sparse_graph = self.embed_sub_trainer.compute_scores_for_inference(
+        #        clusters_mx, per_example_negs)
+        sparse_graph = self._build_temp_sparse_graph(
                 clusters_mx, per_example_negs)
 
         # create custom datasets for training
@@ -208,21 +269,21 @@ class ClusterLinkingTrainer(Trainer):
         embed_dataset_list = broadcast(embed_dataset_list, src=0)
         concat_dataset_list = broadcast(concat_dataset_list, src=0)
 
-        # train on datasets
-        embed_return_dict = self.embed_sub_trainer.train_on_subset(
-                embed_dataset_list, self.train_metadata
-        )
+        ## train on datasets
+        #embed_return_dict = self.embed_sub_trainer.train_on_subset(
+        #        embed_dataset_list, self.train_metadata
+        #)
 
         concat_return_dict = self.concat_sub_trainer.train_on_subset(
                 concat_dataset_list, self.train_metadata
         )
 
-        embed_return_dict = broadcast(embed_return_dict, src=0)
+        #embed_return_dict = broadcast(embed_return_dict, src=0)
         concat_return_dict = broadcast(concat_return_dict, src=0)
 
         return_dict = {}
         return_dict.update(dataset_metrics)
-        return_dict.update(embed_return_dict)
+        #return_dict.update(embed_return_dict)
         return_dict.update(concat_return_dict)
 
         #if get_rank() == 0:
@@ -381,6 +442,19 @@ class ClusterLinkingTrainer(Trainer):
                 if get_rank() == 0:
                     try:
                         next_batch = next(data_iterator)
+                        # make sure the cluster_mx is sorted correctly
+                        _row, _col, _data = [], [], []
+                        current_row = 0
+                        ctr = 0
+                        for r, d in sorted(zip(next_batch.row, next_batch.data)):
+                            if current_row != r:
+                                current_row = r
+                                ctr = 0
+                            _row.append(r)
+                            _col.append(ctr)
+                            _data.append(d)
+                            ctr += 1
+                        next_batch = coo_matrix((_data, (_row, _col)), shape=next_batch.shape)
                         negs = self._choose_negs(next_batch)
                         batch = (next_batch, negs)
                     except StopIteration:
@@ -422,21 +496,21 @@ class ClusterLinkingTrainer(Trainer):
             logger.info('********** [END] epoch: {} **********'.format(epoch))
 
             # run full evaluation at the end of each epoch
-            if args.evaluate_during_training:
+            if args.evaluate_during_training and epoch % 10 == 9:
                 if args.do_train_eval:
                     train_eval_metrics = self.evaluate(
                             split='train',
                             suffix='checkpoint-{}'.format(global_step)
                     )
                     if get_rank() == 0:
-                        wandb.log(avg_return_dict, step=global_step)
+                        wandb.log(train_eval_metrics, step=global_step)
                 if args.do_val:
                     val_metrics = self.evaluate(
                             split='val',
                             suffix='checkpoint-{}'.format(global_step)
                     )
                     if get_rank() == 0:
-                        wandb.log(avg_return_dict, step=global_step)
+                        wandb.log(val_metrics, step=global_step)
 
         logger.info('Training complete')
         #if get_rank() == 0:
@@ -452,37 +526,37 @@ class ClusterLinkingTrainer(Trainer):
 
         if split == 'train':
             metadata = self.train_metadata
-            knn_index = self.train_knn_index
+            #knn_index = self.train_knn_index
             example_dir = args.train_cache_dir
         elif split == 'val':
             metadata = self.val_metadata
-            knn_index = self.val_knn_index
+            #knn_index = self.val_knn_index
             example_dir = args.val_cache_dir
         else:
             metadata = self.test_metadata
-            knn_index = self.test_knn_index
+            #knn_index = self.test_knn_index
             example_dir = args.test_cache_dir
 
-        # refresh the knn index
-        knn_index.refresh_index()
+        ## refresh the knn index
+        #knn_index.refresh_index()
 
-        # save the knn index
-        if get_rank() == 0:
-            knn_save_fname = os.path.join(args.output_dir, suffix,
-                                          'knn_index.' + split + '.debug_results.pkl')
-            with open(knn_save_fname, 'wb') as f:
-                pickle.dump((knn_index.idxs, knn_index.X), f, pickle.HIGHEST_PROTOCOL)
+        ## save the knn index
+        #if get_rank() == 0:
+        #    knn_save_fname = os.path.join(args.output_dir, suffix,
+        #                                  'knn_index.' + split + '.debug_results.pkl')
+        #    with open(knn_save_fname, 'wb') as f:
+        #        pickle.dump((knn_index.idxs, knn_index.X), f, pickle.HIGHEST_PROTOCOL)
 
         embed_metrics = None
         concat_metrics = None
         if args.clustering_domain == 'within_doc':
-            embed_metrics = eval_wdoc(
-                args, example_dir, metadata, knn_index, self.embed_sub_trainer,
-                save_fname=os.path.join(args.output_dir, suffix,
-                                        'embed.' + split + '.debug_results.pkl')
-            )
+            #embed_metrics = eval_wdoc(
+            #    args, example_dir, metadata, knn_index, self.embed_sub_trainer,
+            #    save_fname=os.path.join(args.output_dir, suffix,
+            #                            'embed.' + split + '.debug_results.pkl')
+            #)
             concat_metrics = eval_wdoc(
-                args, example_dir, metadata, knn_index, self.concat_sub_trainer,
+                args, example_dir, metadata, self.concat_sub_trainer,
                 save_fname=os.path.join(args.output_dir, suffix,
                                         'concat.' + split + '.debug_results.pkl')
             )
@@ -500,10 +574,10 @@ class ClusterLinkingTrainer(Trainer):
         concat_metrics = broadcast(concat_metrics, src=0)
 
         # pool all of the metrics into one dictionary
-        embed_metrics = {'embed_' + k : v for k, v in embed_metrics.items()}
+        #embed_metrics = {'embed_' + k : v for k, v in embed_metrics.items()}
         concat_metrics = {'concat_' + k : v for k, v in concat_metrics.items()}
         metrics = {}
-        metrics.update(embed_metrics)
+        #metrics.update(embed_metrics)
         metrics.update(concat_metrics)
         metrics = {split + '_' + k : v for k, v in metrics.items()}
 

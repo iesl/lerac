@@ -124,8 +124,6 @@ def get_args():
                         help="alpha for exponential linkage")
     parser.add_argument("--k", default=32, type=int,
                         help="k for kNN for eval of coref candidates")
-    parser.add_argument("--max_in_cluster_dist", default=0.0, type=float,
-                        help="For clustering loss")
     parser.add_argument("--seq_embed_dim",
                         default=128,
                         type=int,
@@ -173,7 +171,7 @@ def get_args():
                         help="method for generating pairs")
     parser.add_argument("--training_method",
                         default='triplet_max_margin',
-                        choices = ['triplet_max_margin', 'triplet_bpr', 'softmax'],
+                        choices = ['triplet_max_margin', 'triplet_bpr', 'softmax', 'threshold'],
                         type=str,
                         help="method of training on pairs")
     parser.add_argument("--training_edges_considered",

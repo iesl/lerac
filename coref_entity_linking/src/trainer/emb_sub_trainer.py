@@ -6,11 +6,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
+import random
 
 from data.datasets import InferenceEmbeddingDataset
 from data.dataloaders import (InferenceEmbeddingDataLoader,
                               TripletEmbeddingDataLoader,
-                              SoftmaxEmbeddingDataLoader)
+                              SoftmaxEmbeddingDataLoader,
+                              ScaledPairsEmbeddingDataLoader)
 from utils.comm import get_rank, all_gather, synchronize
 from utils.misc import flatten, unique
 
@@ -157,6 +159,8 @@ class EmbeddingSubTrainer(object):
             return self._train_triplet(dataset_list, metadata)
         elif args.training_method == 'softmax':
             return self._train_softmax(dataset_list, metadata)
+        elif args.training_method == 'threshold':
+            return self._train_threshold(dataset_list, metadata)
         else:
             raise ValueError('unsupported training_method')
 
@@ -300,13 +304,65 @@ class EmbeddingSubTrainer(object):
                 losses.append(loss.item())
                 loss.backward()
 
-                torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(),
-                        args.max_grad_norm
+            torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    args.max_grad_norm
+            )
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
+            time_per_dataset.append(time.time() - _dataset_start_time)
+
+        gathered_data = all_gather({
+                'losses' : losses,
+        })
+
+        if get_rank() == 0:
+            losses = flatten([d['losses'] for d in gathered_data])
+            loss = np.mean(losses)
+
+            synchronize()
+            return { 'embed_loss' : loss }
+        else:
+            synchronize()
+            return None
+
+    def _train_threshold(self, dataset_list, metadata):
+        args = self.args
+
+        losses = [] 
+        time_per_dataset = []
+        dataset_sizes = []
+
+        self.model.train()
+        self.model.zero_grad()
+        random.shuffle(dataset_list)
+        for dataset in dataset_list:
+            _dataset_start_time = time.time()
+            dataset_sizes.append(len(dataset))
+            dataloader = ScaledPairsEmbeddingDataLoader(args, dataset)
+            for batch in dataloader:
+                batch = tuple(t.to(args.device) for t in batch)
+                inputs = {'input_ids':      batch[2],
+                          'attention_mask': batch[3],
+                          'token_type_ids': batch[4],
+                          'concat_input': False}
+                outputs = self.model(**inputs)
+                dot_prods = torch.sum(
+                        outputs[:,0,:] * outputs[:,1,:],
+                        dim=-1
                 )
-                self.optimizer.step()
-                self.scheduler.step()
-                self.model.zero_grad()
+                loss = torch.mean(F.relu(args.margin - (batch[0] * dot_prods)))
+                losses.append(loss.item())
+                loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    args.max_grad_norm
+            )
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
             time_per_dataset.append(time.time() - _dataset_start_time)
 
         gathered_data = all_gather({
