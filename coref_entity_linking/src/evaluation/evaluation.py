@@ -33,15 +33,12 @@ def eval_wdoc(args,
     logger.info('Building within doc sparse graphs...')
     doc_level_graphs = []
     per_doc_coref_clusters = []
-    #for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
-    #    per_doc_coref_clusters.append(
-    #            [[x for x in v if x != k] for k, v in doc_clusters.items()]
-    #    )
-    #    doc_mentions = np.asarray([x for k, v in doc_clusters.items()
-    #                                    for x in v if x != k])
-    for doc_clusters in tqdm([args._tiny_exp_clusters], disable=(get_rank() != 0)):
-        doc_mentions = np.asarray([x for v in doc_clusters
-                                        for x in v if x >= args.num_entities])
+    for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
+        per_doc_coref_clusters.append(
+                [[x for x in v if x != k] for k, v in doc_clusters.items()]
+        )
+        doc_mentions = np.asarray([x for k, v in doc_clusters.items()
+                                        for x in v if x != k])
         doc_mentions = np.sort(doc_mentions)
         doc_level_graphs.append(
             build_sparse_affinity_graph(
@@ -55,9 +52,6 @@ def eval_wdoc(args,
                 build_linking_graph=True
             )
         )
-
-    # FIXME: for tiny experiment
-    per_doc_coref_clusters =  [[[x for x in v if x >= args.num_entities] for v in args._tiny_exp_clusters]]
 
     logger.info('Done.')
 
@@ -162,7 +156,6 @@ def compute_coref_metrics(gold_coref_clusters, coref_graphs, coref_threshold):
     return coref_results
 
 
-
 def compute_linking_metrics(metadata, linking_graphs):
     global_graph = _merge_sparse_graphs(linking_graphs)
 
@@ -171,31 +164,22 @@ def compute_linking_metrics(metadata, linking_graphs):
     _col = global_graph.col
     mention2cand = defaultdict(list)
     for eidx, midx in zip(_row, _col):
+        assert eidx < midx
         mention2cand[midx].append(eidx)
 
-    # midxs = list(metadata.midx2eidx.keys())
-    midxs = list(mention2cand.keys())
+    midxs = list(metadata.midx2eidx.keys())
     recall_hits = 0
     recall_total = len(midxs)
     no_candidates = []
     for midx in midxs:
-        cands = mention2cand.get(midx, None)
-        if cands is None:
+        cands = mention2cand.get(midx, [])
+        if len(cands) == 0:
             no_candidates.append(midx)
             continue
         if metadata.midx2eidx[midx] in cands:
             recall_hits += 1
 
     midxs = np.asarray(midxs)
-
-    ### entity linking decision is max row (entities) from each col (mentions)
-    ##all_entity_choices = global_graph.argmax(axis=0)
-    ##all_entity_choices = np.asarray(all_entity_choices).reshape(-1,)
-    ##all_idxs = np.arange(all_entity_choices.size)
-
-    ##mention_idx_mask = np.isin(all_idxs, list(mention2cand.keys()))
-    ##pred_eidxs = all_entity_choices[mention_idx_mask]
-    ##midxs = all_idxs[mention_idx_mask]
 
     # build slim global linking graph for joint linking inference
     global_graph = global_graph.tocsc()
@@ -212,12 +196,8 @@ def compute_linking_metrics(metadata, linking_graphs):
     # compute linking accuracy
     linking_hits, linking_total = 0, 0
     pred_midx2eidx = {m : e for m, e in zip(midxs, pred_eidxs)}
-    #for midx, true_eidx in metadata.midx2eidx.items():
-    #    if true_eidx == pred_midx2eidx.get(midx, -1):
-    #        linking_hits += 1
-    #    linking_total += 1
-    for midx, pred_eidx in pred_midx2eidx.items():
-        if pred_eidx == metadata.midx2eidx[midx]:
+    for midx, true_eidx in metadata.midx2eidx.items():
+        if true_eidx == pred_midx2eidx.get(midx, -1):
             linking_hits += 1
         linking_total += 1
 
@@ -315,12 +295,8 @@ def compute_joint_metrics(metadata, joint_graphs):
             pred_midx2eidx[midx] = eidx
 
     joint_hits, joint_total = 0, 0
-    #for midx, true_eidx in metadata.midx2eidx.items():
-    #    if pred_midx2eidx.get(midx, -1) == true_eidx:
-    #        joint_hits += 1
-    #    joint_total += 1
-    for midx, pred_eidx in pred_midx2eidx.items():
-        if pred_eidx == metadata.midx2eidx[midx]:
+    for midx, true_eidx in metadata.midx2eidx.items():
+        if pred_midx2eidx.get(midx, -1) == true_eidx:
             joint_hits += 1
         joint_total += 1
 
@@ -414,12 +390,7 @@ def build_sparse_affinity_graph(args,
                             k=args.k
                     )
                 elif args.clustering_domain == 'cross_doc':
-                    all_midxs = list(metadata.midx2eidx.keys())
-                    cand_gen_knn = knn_index.get_knn_limited_index(
-                            midxs,
-                            exclude_index_idxs=all_midxs,
-                            k=args.k
-                    )
+                    pass
                 else:
                     raise ValueError('unsupported clustering_domain')
                 linking_graph_edges.extend(

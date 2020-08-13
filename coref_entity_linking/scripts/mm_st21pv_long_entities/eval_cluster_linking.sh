@@ -30,10 +30,11 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir data/${DATASET}/ \
         --model_type bert \
-        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp17/checkpoint-3721/ \
+        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/tiny_exp2/checkpoint-190/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp17/checkpoint-3721/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/tiny_exp2/checkpoint-190/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
+        --tiny_experiment \
         --do_train_eval \
         --max_seq_length 128 \
         --seq_embed_dim 128 \

@@ -86,13 +86,13 @@ class Trainer(ABC):
             self.create_train_dataloader()
             self.create_train_eval_dataloader()
 
-            if args.evaluate_during_training:
+            if args.do_val:
                 self.create_val_dataloader()
 
             # set optimizers and schedulers
             self.set_optimizers_and_schedulers()
 
-        if args.do_train_eval:
+        if args.do_train_eval and not args.do_train:
             self.create_train_eval_dataloader()
 
         if args.do_val:
