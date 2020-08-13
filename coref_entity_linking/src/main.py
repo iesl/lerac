@@ -90,6 +90,8 @@ def get_args():
     parser.add_argument("--max_seq_length", default=128, type=int,
                         help="The maximum total input sequence length after tokenization. Sequences longer "
                              "than this will be truncated, sequences shorter will be padded.")
+    parser.add_argument("--tiny_experiment", action='store_true',
+                        help="Whether to run on a small subset of training data for development purposes.")
     parser.add_argument("--do_train", action='store_true',
                         help="Whether to run training.")
     parser.add_argument("--do_train_eval", action='store_true',

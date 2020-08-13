@@ -171,6 +171,29 @@ class Trainer(ABC):
             torch.save(_metadata, metadata_file)
             logger.info('Done.')
 
+        if args.tiny_experiment:
+            assert split == 'train'
+            _tiny_metadata = copy.deepcopy(_metadata)
+            if args.clustering_domain == 'within_doc':
+                _wdoc_clusters = {k : _metadata.wdoc_clusters[k]
+                        for k in list(_metadata.wdoc_clusters.keys())[:15]}
+                _xdoc_clusters = None
+                _tiny_idxs = flatten(flatten([list(c.values()) for c in _wdoc_clusters.values()]))
+            elif args.clustering_domain == 'cross_doc':
+                raise NotImplementedError('tiny experiment not implemented yet for xdoc')
+            else:
+                raise ValueError('invalid clustering_domain')
+            _tiny_midxs = list(filter(lambda x : x >= _metadata.num_entities, _tiny_idxs))
+            _midx2cand = {k : v for k, v in _metadata.midx2cand.items() if k in _tiny_midxs}
+            _midx2eidx = {k : v for k, v in _metadata.midx2eidx.items() if k in _tiny_midxs}
+            _midx2type = {k : v for k, v in _metadata.midx2type.items() if k in _tiny_midxs}
+            _tiny_metadata.wdoc_clusters = _wdoc_clusters
+            _tiny_metadata.xdoc_clusters = _xdoc_clusters
+            _tiny_metadata.midx2cand = _midx2cand
+            _tiny_metadata.midx2eidx = _midx2eidx
+            _tiny_metadata.midx2type = _midx2type
+            _metadata = _tiny_metadata
+
         if split == 'train':
             self.train_metadata = _metadata
         elif split == 'val':
