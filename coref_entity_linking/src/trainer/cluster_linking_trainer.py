@@ -488,7 +488,7 @@ class ClusterLinkingTrainer(Trainer):
             logger.info('********** [END] epoch: {} **********'.format(epoch))
 
             # run full evaluation at the end of each epoch
-            if args.evaluate_during_training and epoch % 10 == 9:
+            if args.evaluate_during_training:
                 if args.do_train_eval:
                     train_eval_metrics = self.evaluate(
                             split='train',

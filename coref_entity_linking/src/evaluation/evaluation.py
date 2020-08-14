@@ -99,6 +99,7 @@ def eval_wdoc(args,
     save_data.update(coref_metrics)
     save_data.update(linking_metrics)
     save_data.update(joint_metrics)
+    save_data.update({'metadata': metadata})
 
     with open(save_fname, 'wb') as f:
         pickle.dump(save_data, f)
@@ -199,6 +200,8 @@ def compute_linking_metrics(metadata, linking_graphs):
     for midx, true_eidx in metadata.midx2eidx.items():
         if true_eidx == pred_midx2eidx.get(midx, -1):
             linking_hits += 1
+        elif true_eidx in metadata.midx2cand[midx]:
+            missed_vanilla_midxs.append(midx)
         linking_total += 1
 
     results_dict = {

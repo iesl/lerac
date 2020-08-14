@@ -75,8 +75,6 @@ class ConcatenationSubTrainer(object):
 
                 if args.training_method == 'triplet_max_margin':
                     # max-margin
-
-
                     per_triplet_loss = F.relu(
                             scores[:, 1]   # negative dot products
                             - scores[:, 0] # positive dot products
@@ -163,6 +161,7 @@ class ConcatenationSubTrainer(object):
 
         self.model.train()
         self.model.zero_grad()
+        criterion = nn.CrossEntropyLoss()
         for dataset in dataset_list:
             _dataset_start_time = time.time()
             dataset_sizes.append(len(dataset))
