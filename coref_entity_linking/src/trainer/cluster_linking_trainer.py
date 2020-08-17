@@ -42,7 +42,14 @@ class ClusterLinkingTrainer(Trainer):
     def __init__(self, args):
         super(ClusterLinkingTrainer, self).__init__(args)
 
-        args.num_entities = self.train_metadata.num_entities
+        if hasattr(self, 'train_metadata'):
+            args.num_entities = self.train_metadata.num_entities
+        elif hasattr(self, 'val_metadata'):
+            args.num_entities = self.val_metadata.num_entities
+        elif hasattr(self, 'test_metadata'):
+            args.num_entities = self.test_metadata.num_entities
+        else:
+            raise AttributeError('Must have a dataset metadata loaded and available')
 
         # create sub-trainers for models
         self.create_sub_trainers()

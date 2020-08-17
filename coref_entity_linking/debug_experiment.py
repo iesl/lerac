@@ -12,8 +12,8 @@ from IPython import embed
 
 EXTERNAL_BASE_DIR=('/home/ds-share/data2/users/rangell/lerac/coref_entity_linking/'
                    'experiments/mm_st21pv_long_entities/cluster_linking')
-EXP_ID='tiny_exp'
-CKPT_ID='checkpoint-190' 
+EXP_ID='exp18'
+CKPT_ID='checkpoint-3721' 
 
 # TODO:
 # - 
@@ -40,16 +40,15 @@ def load_data_files():
             EXTERNAL_BASE_DIR,
             EXP_ID,
             CKPT_ID,
-            'concat.train.debug_results.pkl'
+            'concat.val.debug_results.pkl'
     )
-    metadata_fname = 'data/mm_st21pv_long_entities/cache/train/metadata.pt'
 
     #knn_index_tuple = load_pickle_file(knn_index_fname)
     #embed_results_data = load_pickle_file(embed_fname)
     knn_index_tuple = None
     embed_results_data = None
     concat_results_data = load_pickle_file(concat_fname)
-    metadata = torch.load(metadata_fname)
+    metadata = concat_results_data['metadata']
 
     return metadata, knn_index_tuple, embed_results_data, concat_results_data
 
@@ -60,7 +59,11 @@ def compute_accuracy(results_data, metadata, pred_key=''):
     hits, total = 0, 0
     for midx, true_label in metadata.midx2eidx.items():
         pred_label = results_data[pred_key].get(midx, -1)
-        assert 'joint' not in pred_key or pred_label != -1
+        try:
+            assert 'joint' not in pred_key or pred_label != -1
+        except:
+            embed()
+            exit()
         if true_label == pred_label:
             hits += 1
             correct_midxs.append(midx)
@@ -183,12 +186,15 @@ if __name__ == '__main__':
     metadata, knn_index_tuple, embed_results_data, concat_results_data = load_data_files()
     print('Done.')
 
+
     results = SimpleNamespace()
+
     #knn_idxs, knn_X = knn_index_tuple
 
     #print('kNN index check...')
     #knn_index_check(metadata, knn_idxs, knn_X, results)
     #print('Done.')
+    knn_idxs, knn_X = None, None
 
     # compute list of lists of midxs for gold clusters analysis
     wdoc_clusters =  [
@@ -197,43 +203,43 @@ if __name__ == '__main__':
                     for cluster in doc.values()
     ]
 
-    embed()
-    exit()
+    #embed()
+    #exit()
 
 
     print('Computing accuracies...')
-    results.embed_vanilla_accuracy, eva_correct_midxs = compute_accuracy(
-            embed_results_data, metadata, pred_key='vanilla_pred_midx2eidx'
-    )
+    #results.embed_vanilla_accuracy, eva_correct_midxs = compute_accuracy(
+    #        embed_results_data, metadata, pred_key='vanilla_pred_midx2eidx'
+    #)
     results.concat_vanilla_accuracy, cva_correct_midxs = compute_accuracy(
             concat_results_data, metadata, pred_key='vanilla_pred_midx2eidx'
     )
 
-    results.embed_joint_accuracy, eja_correct_midxs = compute_accuracy(
-            embed_results_data, metadata, pred_key='joint_pred_midx2eidx'
-    )
+    #results.embed_joint_accuracy, eja_correct_midxs = compute_accuracy(
+    #        embed_results_data, metadata, pred_key='joint_pred_midx2eidx'
+    #)
     results.concat_joint_accuracy, cja_correct_midxs = compute_accuracy(
             concat_results_data, metadata, pred_key='joint_pred_midx2eidx'
     )
 
-    results.embed_gold_clusters_recall, egcr_correct_midxs = compute_gold_clusters_recall(
-            embed_results_data, metadata, wdoc_clusters
-    )
+    #results.embed_gold_clusters_recall, egcr_correct_midxs = compute_gold_clusters_recall(
+    #        embed_results_data, metadata, wdoc_clusters
+    #)
     results.concat_gold_clusters_recall, cgcr_correct_midxs = compute_gold_clusters_recall(
             concat_results_data, metadata, wdoc_clusters
     )
 
 
-    results.embed_gold_clusters_accuracy, egca_correct_midxs = compute_gold_clusters_accuracy(
-            embed_results_data, metadata, knn_idxs, knn_X, wdoc_clusters
-    )
+    #results.embed_gold_clusters_accuracy, egca_correct_midxs = compute_gold_clusters_accuracy(
+    #        embed_results_data, metadata, knn_idxs, knn_X, wdoc_clusters
+    #)
     results.concat_gold_clusters_accuracy, cgca_correct_midxs = compute_gold_clusters_accuracy(
             concat_results_data, metadata, knn_idxs, knn_X, wdoc_clusters
     )
 
-    results.embed_gold_clusters_accuracy_w_gt_entity, egca2_correct_midxs = compute_gold_clusters_accuracy(
-            embed_results_data, metadata, knn_idxs, knn_X, wdoc_clusters, include_gold_eidxs=True
-    )
+    #results.embed_gold_clusters_accuracy_w_gt_entity, egca2_correct_midxs = compute_gold_clusters_accuracy(
+    #        embed_results_data, metadata, knn_idxs, knn_X, wdoc_clusters, include_gold_eidxs=True
+    #)
 
     print('Done.')
 

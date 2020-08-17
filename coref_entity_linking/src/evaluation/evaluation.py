@@ -187,7 +187,7 @@ def compute_linking_metrics(metadata, linking_graphs):
     def _get_slim_links(midx):
         col_entries = global_graph.getcol(midx).tocoo()
         if col_entries.nnz == 0:
-            return (-1, -np.inf)
+            return (0, -np.inf)
         return max(zip(col_entries.row, col_entries.data), key=lambda x : x[1])
     v_max = np.vectorize(_get_slim_links)
     pred_eidxs, max_affinities = v_max(midxs)
@@ -195,6 +195,7 @@ def compute_linking_metrics(metadata, linking_graphs):
                                    shape=global_graph.shape)
 
     # compute linking accuracy
+    missed_vanilla_midxs = []
     linking_hits, linking_total = 0, 0
     pred_midx2eidx = {m : e for m, e in zip(midxs, pred_eidxs)}
     for midx, true_eidx in metadata.midx2eidx.items():

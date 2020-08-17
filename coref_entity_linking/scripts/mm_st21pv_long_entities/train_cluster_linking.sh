@@ -22,7 +22,7 @@ python -m torch.distributed.launch \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp18/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp19/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_train \
         --do_train_eval \
@@ -37,7 +37,7 @@ python -m torch.distributed.launch \
         --training_method 'softmax' \
         --pair_gen_method 'all_pairs' \
         --training_edges_considered 'all' \
-        --k 256 \
+        --k 32 \
         --margin 0.5 \
         --warmup_steps 0 \
         --learning_rate 5e-5 \
@@ -45,7 +45,7 @@ python -m torch.distributed.launch \
         --num_clusters_per_macro_batch 16 \
         --per_gpu_train_batch_size 16 \
         --per_gpu_infer_batch_size 256 \
-        --num_train_epochs 3 \
+        --num_train_epochs 5 \
         --logging_steps 25 \
         --knn_refresh_steps -1 \
         --evaluate_during_training \
