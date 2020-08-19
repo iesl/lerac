@@ -252,7 +252,11 @@ class ClusterLinkingTrainer(Trainer):
         # compute scores using up-to-date model
         #sparse_graph = self.embed_sub_trainer.compute_scores_for_inference(
         #        clusters_mx, per_example_negs)
-        sparse_graph = self._build_temp_sparse_graph(
+        #sparse_graph = self._build_temp_sparse_graph(
+        #        clusters_mx, per_example_negs)
+
+        # TODO: produce sparse graph w/ concat model in inference mode
+        sparse_graph = self.concat_sub_trainer.compute_scores_for_inference(
                 clusters_mx, per_example_negs)
 
         # create custom datasets for training

@@ -14,7 +14,7 @@ from data.dataloaders import (PairsConcatenationDataLoader,
                               TripletConcatenationDataLoader,
                               SoftmaxConcatenationDataLoader,
                               ScaledPairsConcatenationDataLoader)
-from utils.comm import get_rank, all_gather, synchronize
+from utils.comm import get_rank, all_gather, synchronize, broadcast
 from utils.misc import flatten, unique
 
 from IPython import embed
@@ -33,6 +33,54 @@ class ConcatenationSubTrainer(object):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
+
+
+    def compute_scores_for_inference(self, clusters_mx, per_example_negs):
+        # TODO: add description here
+        args = self.args
+
+        edges = None
+        if get_rank() == 0:
+            ## make the list of pairs of dot products we need
+            _row = clusters_mx.row
+            # positives:
+            local_pos_a, local_pos_b = np.where(
+                    np.triu(_row[np.newaxis, :] == _row[:, np.newaxis], k=1)
+            )
+            pos_a = clusters_mx.data[local_pos_a]
+            pos_b = clusters_mx.data[local_pos_b]
+            # negatives:
+            local_neg_a = np.tile(
+                np.arange(per_example_negs.shape[0])[:, np.newaxis],
+                (1, per_example_negs.shape[1])
+            ).flatten()
+            neg_a = clusters_mx.data[local_neg_a]
+            neg_b = per_example_negs.flatten()
+
+            neg_mask = (neg_b != -1)
+            neg_a = neg_a[neg_mask]
+            neg_b = neg_b[neg_mask]
+
+            # create subset of the sparse graph we care about
+            a = np.concatenate((pos_a, neg_a), axis=0)
+            b = np.concatenate((pos_b, neg_b), axis=0)
+            edges = list(zip(a, b))
+        edges = broadcast(edges, src=0)
+
+        example_dir = args.train_cache_dir
+        affinities = self.get_edge_affinities(edges, example_dir, None)
+
+        sparse_graph = None
+        if get_rank() == 0:
+            # convert to coo_matrix
+            edges = np.asarray(edges).T
+            affinities = np.asarray(affinities)
+            _sparse_num = np.max(edges) + 1
+            sparse_graph = coo_matrix((affinities, edges),
+                                      shape=(_sparse_num, _sparse_num))
+
+        synchronize()
+        return sparse_graph
 
     def train_on_subset(self, dataset_list, metadata):
         args = self.args

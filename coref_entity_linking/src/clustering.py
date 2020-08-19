@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import defaultdict
 import logging
 import math
 import numpy as np
@@ -323,6 +324,7 @@ class MstPairsCreator(PairsCreator):
 
         # get all of the edges
         all_edges = np.vstack((sparse_graph.row, sparse_graph.col))
+        all_affinities = sparse_graph.data
 
         # get the positive and negative edges
         local_pos_a, local_pos_b = np.where(
@@ -335,8 +337,25 @@ class MstPairsCreator(PairsCreator):
                 
         neg_mask = ~pos_mask
         pos_edges = all_edges[:, pos_mask]
-        #pos_edges = np.concatenate((pos_edges, pos_edges[[1, 0]]), axis=1).T
+
+        # limit the number of negatives to only the most offending ones
+        # this doesn't have a quota on m-m vs m-e negs
+        MAX_NEGS_PER_EX = 28
         neg_edges = all_edges[:, neg_mask].T
+        neg_affinities = all_affinities[neg_mask]
+        neg_tuples_dict = defaultdict(list)
+        for (a, b), c in zip(neg_edges.tolist(), neg_affinities):
+            neg_tuples_dict[a].append((b, c))
+        neg_edge_tuples = []
+        for a, neg_edges in neg_tuples_dict.items():
+            neg_edges_to_keep = sorted(
+                    neg_edges, key=lambda x : x[1], reverse=True
+            )
+            embed()
+            exit()
+            neg_edges_to_keep = neg_edges_to_keep[:MAX_NEGS_PER_EX]
+            neg_edge_tuples.extend([(a, b) for b, _ in neg_edges_to_keep])
+        neg_edges = np.asarray(neg_edge_tuples)
 
         # organize pairs collection
         pairs_collection = []
