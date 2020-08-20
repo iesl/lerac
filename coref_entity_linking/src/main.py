@@ -126,6 +126,8 @@ def get_args():
                         help="alpha for exponential linkage")
     parser.add_argument("--k", default=32, type=int,
                         help="k for kNN for eval of coref candidates")
+    parser.add_argument("--num_train_negs", default=32, type=int,
+                        help="number of negatives per example we train on")
     parser.add_argument("--seq_embed_dim",
                         default=128,
                         type=int,

@@ -339,8 +339,7 @@ class MstPairsCreator(PairsCreator):
         pos_edges = all_edges[:, pos_mask]
 
         # limit the number of negatives to only the most offending ones
-        # this doesn't have a quota on m-m vs m-e negs
-        MAX_NEGS_PER_EX = 28
+        # this splits the quota evenly between m-m and m-e negs
         neg_edges = all_edges[:, neg_mask].T
         neg_affinities = all_affinities[neg_mask]
         neg_tuples_dict = defaultdict(list)
@@ -348,13 +347,13 @@ class MstPairsCreator(PairsCreator):
             neg_tuples_dict[a].append((b, c))
         neg_edge_tuples = []
         for a, neg_edges in neg_tuples_dict.items():
-            neg_edges_to_keep = sorted(
-                    neg_edges, key=lambda x : x[1], reverse=True
-            )
-            embed()
-            exit()
-            neg_edges_to_keep = neg_edges_to_keep[:MAX_NEGS_PER_EX]
-            neg_edge_tuples.extend([(a, b) for b, _ in neg_edges_to_keep])
+            neg_m_m = [(a, b) for (a, b) in neg_edges if a >= args.num_entities]
+            neg_m_m = sorted(neg_m_m, key=lambda x : x[1], reverse=True)
+            neg_m_m = neg_m_m[:math.ceil(args.num_train_negs/2)]
+            neg_m_e = [(a, b) for (a, b) in neg_edges if a < args.num_entities]
+            neg_m_e = sorted(neg_m_e, key=lambda x : x[1], reverse=True)
+            neg_m_e = neg_m_e[:math.floor(args.num_train_negs/2)]
+            neg_edge_tuples.extend([(a, b) for b, _ in (neg_m_m + neg_m_e)])
         neg_edges = np.asarray(neg_edge_tuples)
 
         # organize pairs collection
