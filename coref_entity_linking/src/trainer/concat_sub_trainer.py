@@ -120,6 +120,7 @@ class ConcatenationSubTrainer(object):
                 outputs = self.model(**inputs)
 
                 scores = torch.mean(outputs, -1)
+                #scores = torch.sigmoid(scores)
 
                 if args.training_method == 'triplet_max_margin':
                     # max-margin
@@ -274,8 +275,9 @@ class ConcatenationSubTrainer(object):
                           'attention_mask': batch[3],
                           'token_type_ids': batch[4]}
                 outputs = self.model(**inputs)
-                scores = torch.mean(outputs, -1)
-                loss = torch.sum(F.relu(args.margin - (batch[0] * scores)))
+                scores = torch.mean(outputs, -1).reshape(-1,)
+                loss = torch.mean(torch.abs(batch[0]) * F.relu(args.margin - (torch.sign(batch[0]) * scores)))
+                #loss = torch.sum(F.relu(args.margin - (torch.sign(batch[0]) * scores))) * 8 / len(dataset)
                 agg_loss += loss.item()
                 loss.backward()
 
@@ -291,14 +293,17 @@ class ConcatenationSubTrainer(object):
 
         gathered_data = all_gather({
                 'losses' : losses,
+                'dataset_sizes' : dataset_sizes,
         })
 
         if get_rank() == 0:
             losses = flatten([d['losses'] for d in gathered_data])
+            dataset_sizes = flatten([d['dataset_sizes'] for d in gathered_data])
             loss = np.mean(losses)
+            avg_dataset_size = np.mean(dataset_sizes)
 
             synchronize()
-            return { 'concat_loss' : loss }
+            return { 'concat_loss' : loss, 'dataset_size': avg_dataset_size, 'num_datasets': len(dataset_list) }
         else:
             synchronize()
             return None

@@ -441,6 +441,11 @@ class ClusterLinkingTrainer(Trainer):
             for _ in trange(num_batches,
                             desc='Epoch: {} - Batches'.format(epoch),
                             disable=(get_rank() != 0 or args.disable_logging)):
+
+                ## FIXME: hack for hyperparameter scheduling
+                #if global_step > 400:
+                #    args.training_edges_considered = 'all'
+
                 # get batch from rank0 and broadcast it to the other processes
                 if get_rank() == 0:
                     try:
@@ -483,6 +488,7 @@ class ClusterLinkingTrainer(Trainer):
                         )
                         if get_rank() == 0:
                             wandb.log({stat_name : stat_value/args.logging_steps}, step=global_step)
+                    logger.info('Using {} edges for training'.format(args.training_edges_considered))
                     log_return_dicts = []
 
                 # refresh the knn index 
@@ -499,6 +505,7 @@ class ClusterLinkingTrainer(Trainer):
             logger.info('********** [END] epoch: {} **********'.format(epoch))
 
             # run full evaluation at the end of each epoch
+            #if args.evaluate_during_training and epoch % 10 == 9:
             if args.evaluate_during_training:
                 if args.do_train_eval:
                     train_eval_metrics = self.evaluate(

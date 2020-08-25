@@ -194,11 +194,16 @@ class ThresholdDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 anchor = joint_collection['anchor']
                 pos_list = joint_collection['pos']
                 neg_list = joint_collection['neg']
-
-                scaled_pairs.extend([(1.0, anchor, p) for p in pos_list])
+                pos_scale_factor = 1.0
+                if len(pos_list) > 0:
+                    while len(pos_list) <= 0.5*len(neg_list):
+                        pos_list.extend(pos_list)
+                    pos_scale_factor = max(0.8*len(neg_list) / len(pos_list), 1.0)
+                scaled_pairs.extend([(pos_scale_factor, anchor, p) for p in pos_list])
                 scaled_pairs.extend([(-1.0, anchor, n) for n in neg_list])
 
-            assert len(scaled_pairs) > 0
+            if len(scaled_pairs) == 0:
+                continue
 
             embed_dataset_list.append(
                     ScaledPairEmbeddingDataset(
@@ -247,6 +252,7 @@ class AllPairsCreator(PairsCreator):
 
         # get all of the edges
         all_edges = np.vstack((sparse_graph.row, sparse_graph.col))
+        all_affinities = sparse_graph.data
 
         # get the positive and negative edges
         local_pos_a, local_pos_b = np.where(
@@ -258,9 +264,36 @@ class AllPairsCreator(PairsCreator):
 
         pos_mask = np.asarray([x in _pos_edges for x in all_edges.T.tolist()])
         neg_mask = ~pos_mask
+
+        #pos_edges = all_edges[:, pos_mask].T
+        #pos_affinities = all_affinities[pos_mask]
+        #pos_tuples_dict = defaultdict(list)
+        #for (a, b), c in zip(pos_edges.tolist(), pos_affinities):
+        #    pos_tuples_dict[a].append((b, c))
+        #pos_edge_tuples = []
+        #for a, pos_edges in pos_tuples_dict.items():
+        #    pos_edge_tuples.extend([(a, b) for (b, c) in pos_edges if c < (args.margin)])
+        #pos_edges = np.asarray(pos_edge_tuples).T
         pos_edges = all_edges[:, pos_mask]
         pos_edges = np.concatenate((pos_edges, pos_edges[[1, 0]]), axis=1).T
+
+        # limit the number of negatives to only the most offending ones
+        # this splits the quota evenly between m-m and m-e negs
         neg_edges = all_edges[:, neg_mask].T
+        neg_affinities = all_affinities[neg_mask]
+        neg_tuples_dict = defaultdict(list)
+        for (a, b), c in zip(neg_edges.tolist(), neg_affinities):
+            neg_tuples_dict[a].append((b, c))
+        neg_edge_tuples = []
+        for a, neg_edges in neg_tuples_dict.items():
+            neg_m_m = [(b, c) for (b, c) in neg_edges if b >= args.num_entities]
+            neg_m_m = sorted(neg_m_m, key=lambda x : x[1], reverse=True)
+            neg_m_m = neg_m_m[:math.ceil(args.num_train_negs/2)]
+            neg_m_e = [(b, c) for (b, c) in neg_edges if b < args.num_entities]
+            neg_m_e = sorted(neg_m_e, key=lambda x : x[1], reverse=True)
+            neg_m_e = neg_m_e[:math.floor(args.num_train_negs/2)]
+            neg_edge_tuples.extend([(a, b) for b, _ in (neg_m_m + neg_m_e)])
+        neg_edges = np.asarray(neg_edge_tuples)
 
         # organize pairs collection
         pairs_collection = []
@@ -275,9 +308,9 @@ class AllPairsCreator(PairsCreator):
                 # this line removes positive entity from anchor's pos list
                 # if it doesn't appear in that mention's candidate set
                 # NOTE: this might be too harsh
-                #pos = list(filter(lambda x : (x >= metadata.num_entities
-                #                        or x in metadata.midx2cand[anchor]),
-                #                  pos))
+                pos = list(filter(lambda x : (x >= metadata.num_entities
+                                        or x in metadata.midx2cand[anchor]),
+                                  pos))
 
                 neg = neg_edges[:, 1][neg_edges[:, 0] == anchor].tolist()
                 neg = list(filter(lambda x : x >= 0, neg))
@@ -293,7 +326,7 @@ class AllPairsCreator(PairsCreator):
                 else:
                     assert args.training_edges_considered == 'all'
 
-                assert metadata.midx2eidx[anchor] in pos
+                #assert metadata.midx2eidx[anchor] in pos
 
                 cluster_pairs_collection.append(
                     {
@@ -347,10 +380,10 @@ class MstPairsCreator(PairsCreator):
             neg_tuples_dict[a].append((b, c))
         neg_edge_tuples = []
         for a, neg_edges in neg_tuples_dict.items():
-            neg_m_m = [(a, b) for (a, b) in neg_edges if a >= args.num_entities]
+            neg_m_m = [(b, c) for (b, c) in neg_edges if b >= args.num_entities]
             neg_m_m = sorted(neg_m_m, key=lambda x : x[1], reverse=True)
             neg_m_m = neg_m_m[:math.ceil(args.num_train_negs/2)]
-            neg_m_e = [(a, b) for (a, b) in neg_edges if a < args.num_entities]
+            neg_m_e = [(b, c) for (b, c) in neg_edges if b < args.num_entities]
             neg_m_e = sorted(neg_m_e, key=lambda x : x[1], reverse=True)
             neg_m_e = neg_m_e[:math.floor(args.num_train_negs/2)]
             neg_edge_tuples.extend([(a, b) for b, _ in (neg_m_m + neg_m_e)])
@@ -363,7 +396,11 @@ class MstPairsCreator(PairsCreator):
             anchors = clusters_mx.data[_row == cluster_index] 
 
             # get cluster specific edges based on MST
+
+            # FIXME: when using m-m edges only, shouldn't include entity in mst computation
             in_cluster_mask = np.isin(pos_edges, anchors)
+            embed()
+            exit()
             in_cluster_mask = (in_cluster_mask[0] & in_cluster_mask[1])
 
             in_cluster_row = sparse_graph.row[pos_mask][in_cluster_mask]
