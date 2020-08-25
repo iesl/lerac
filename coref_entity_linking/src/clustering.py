@@ -365,6 +365,14 @@ class MstPairsCreator(PairsCreator):
         )
         pos_a = _data[local_pos_a]
         pos_b = _data[local_pos_b]
+        if args.training_edges_considered == 'm-e':
+            m_e_mask = pos_a < args.num_entities
+            pos_a = pos_a[m_e_mask]
+            pos_b = pos_b[m_e_mask]
+        elif args.training_edges_considered == 'm-m':
+            m_m_mask = pos_a >= args.num_entities
+            pos_a = pos_a[m_m_mask]
+            pos_b = pos_b[m_m_mask]
         _pos_edges = np.vstack((pos_a, pos_b)).T.tolist()
         pos_mask = np.asarray([x in _pos_edges for x in all_edges.T.tolist()])
                 
@@ -396,11 +404,7 @@ class MstPairsCreator(PairsCreator):
             anchors = clusters_mx.data[_row == cluster_index] 
 
             # get cluster specific edges based on MST
-
-            # FIXME: when using m-m edges only, shouldn't include entity in mst computation
             in_cluster_mask = np.isin(pos_edges, anchors)
-            embed()
-            exit()
             in_cluster_mask = (in_cluster_mask[0] & in_cluster_mask[1])
 
             in_cluster_row = sparse_graph.row[pos_mask][in_cluster_mask]
