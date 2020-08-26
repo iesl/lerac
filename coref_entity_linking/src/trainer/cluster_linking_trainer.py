@@ -272,6 +272,10 @@ class ClusterLinkingTrainer(Trainer):
         embed_dataset_list = broadcast(embed_dataset_list, src=0)
         concat_dataset_list = broadcast(concat_dataset_list, src=0)
 
+        # take care of empty dataset list (should only happen when only considering m-m edges)
+        if embed_dataset_list == None or concat_dataset_list == None:
+            return {}
+
         ## train on datasets
         #embed_return_dict = self.embed_sub_trainer.train_on_subset(
         #        embed_dataset_list, self.train_metadata
