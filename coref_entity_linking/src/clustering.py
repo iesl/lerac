@@ -148,7 +148,7 @@ class SoftmaxDatasetBuilder(SupervisedClusteringDatasetBuilder):
                                      *neg_list[i*num_negs:(i+1)*num_negs]])
 
         if len(examples) == 0:
-            return None, None, None
+            return (None, None), None
 
         # append one big dataset
         embed_dataset_list.append(

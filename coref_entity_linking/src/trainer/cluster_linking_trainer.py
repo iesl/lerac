@@ -447,8 +447,8 @@ class ClusterLinkingTrainer(Trainer):
                             disable=(get_rank() != 0 or args.disable_logging)):
 
                 ## FIXME: hack for hyperparameter scheduling
-                #if global_step > 400:
-                #    args.training_edges_considered = 'all'
+                if global_step > 3721:
+                    args.training_edges_considered = 'all'
 
                 # get batch from rank0 and broadcast it to the other processes
                 if get_rank() == 0:
