@@ -79,7 +79,7 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 for p, n in zip(pos_list, neg_list):
                     triplets.append((anchor, p, n))
 
-        if len(examples) == 0:
+        if len(triplets) == 0:
             return (None, None), None
 
         # append one big dataset
