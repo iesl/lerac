@@ -446,9 +446,22 @@ class ClusterLinkingTrainer(Trainer):
                             desc='Epoch: {} - Batches'.format(epoch),
                             disable=(get_rank() != 0 or args.disable_logging)):
 
-                ## FIXME: hack for hyperparameter scheduling
-                if global_step > 3721:
-                    args.training_edges_considered = 'all'
+                ### FIXME: hack for hyperparameter scheduling
+                #if global_step > 400:
+                #    args.training_edges_considered = 'all'
+                #if global_step % 200 == 199:
+                #    if get_rank() == 0:
+                #        self.embed_sub_trainer.save_model(global_step)
+                #    synchronize()
+                #    val_metrics = self.evaluate(
+                #            split='val',
+                #            suffix='checkpoint-{}'.format(global_step)
+                #    )
+                #    if get_rank() == 0:
+                #        wandb.log(val_metrics, step=global_step)
+                #    synchronize()
+                #    exit()
+
 
                 # get batch from rank0 and broadcast it to the other processes
                 if get_rank() == 0:
@@ -503,7 +516,8 @@ class ClusterLinkingTrainer(Trainer):
 
             # save the model at the end of every epoch
             if get_rank() == 0:
-                self.embed_sub_trainer.save_model(global_step)
+                #self.embed_sub_trainer.save_model(global_step)
+                self.concat_sub_trainer.save_model(global_step)
             synchronize()
 
             logger.info('********** [END] epoch: {} **********'.format(epoch))
@@ -527,10 +541,10 @@ class ClusterLinkingTrainer(Trainer):
                         wandb.log(val_metrics, step=global_step)
 
         logger.info('Training complete')
-        #if get_rank() == 0:
-        #    embed()
-        #synchronize()
-        #exit()
+        if get_rank() == 0:
+            embed()
+        synchronize()
+        exit()
 
     def evaluate(self, split='', suffix=''):
         assert split in ['train', 'val', 'test']
@@ -597,4 +611,9 @@ class ClusterLinkingTrainer(Trainer):
 
         logger.info(metrics)
         logger.info('********** [END] eval: {} **********'.format(split))
+
+        if get_rank() == 0:
+            embed()
+        synchronize()
+        exit()
         return metrics

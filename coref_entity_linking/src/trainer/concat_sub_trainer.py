@@ -313,6 +313,7 @@ class ConcatenationSubTrainer(object):
         dataset = PairsConcatenationDataset(args, edges, example_dir)
         dataloader = PairsConcatenationDataLoader(args, dataset)
 
+        self.model.eval()
         edge2affinity = {}
         for batch in dataloader:
             with torch.no_grad():
