@@ -120,7 +120,6 @@ class ConcatenationSubTrainer(object):
                 outputs = self.model(**inputs)
 
                 scores = torch.mean(outputs, -1)
-                scores = torch.sigmoid(scores)
 
                 if args.training_method == 'triplet_max_margin':
                     # max-margin

@@ -331,11 +331,14 @@ class ClusterLinkingTrainer(Trainer):
                 # produce available negative mention idxs
                 neg_midxs = [m for m in doc_midxs if m not in c_idxs]
 
-                # determine the number of mention negatives
-                num_m_negs = min(args.k // 2, len(neg_midxs))
-
                 # initialize the negs tensors
                 negs = np.tile(-1, (len(c_idxs), args.k))
+
+                # determine the number of mention negatives
+                if args.training_edges_considered != 'm-e':
+                    num_m_negs = min(args.k // 2, len(neg_midxs))
+                else:
+                    num_m_negs = 0
 
                 if args.mention_negatives == 'context_overlap':
                     # use overlapping context negative mentions
@@ -365,46 +368,47 @@ class ClusterLinkingTrainer(Trainer):
 
                 # produce available negative entity idxs
                 # NOTE: this doesn't allow negative e-e edges (there are never any positive ones)
-                num_e_negs = args.k - num_m_negs
-                if args.available_entities == 'candidates_only':
-                    neg_eidxs = [
-                        list(filter(
-                            lambda x : x != c_idxs[0],
-                            self.train_metadata.midx2cand.get(i, [])
-                        ))[:num_e_negs]
-                            for i in c_idxs
-                                if i >= self.train_metadata.num_entities
-                    ]
-                    neg_eidxs = [
-                        l + [-1] * (num_e_negs - len(l))
-                            for l in neg_eidxs
-                    ]
-                    negs[1:, -num_e_negs:] = np.asarray(neg_eidxs)
-                else:
-                    if (args.clustering_domain == 'within_doc'
-                            and args.available_entities == 'knn_candidates'):
-                        # custom w/in doc negative available entities
-                        self.avail_entity_idxs = flatten([
+                if args.training_edges_considered != 'm-m':
+                    num_e_negs = args.k - num_m_negs
+                    if args.available_entities == 'candidates_only':
+                        neg_eidxs = [
                             list(filter(
                                 lambda x : x != c_idxs[0],
                                 self.train_metadata.midx2cand.get(i, [])
-                            ))
-                                for i in (c_idxs + neg_midxs)
+                            ))[:num_e_negs]
+                                for i in c_idxs
                                     if i >= self.train_metadata.num_entities
-                        ])
-
-                    _entity_knn_negs = self.train_knn_index.get_knn_limited_index(
-                            c_idxs[1:],
-                            include_index_idxs=self.avail_entity_idxs,
-                            k=min(num_e_negs, len(self.avail_entity_idxs))
-                    )
-
-                    if _entity_knn_negs.shape[1] < num_e_negs:
-                        assert _entity_knn_negs.shape[1] == len(self.avail_entity_idxs)
-                        _buff = _entity_knn_negs.shape[1] - num_e_negs
-                        negs[1:, -num_e_negs:_buff] = _entity_knn_negs
+                        ]
+                        neg_eidxs = [
+                            l + [-1] * (num_e_negs - len(l))
+                                for l in neg_eidxs
+                        ]
+                        negs[1:, -num_e_negs:] = np.asarray(neg_eidxs)
                     else:
-                        negs[1:, -num_e_negs:] = _entity_knn_negs
+                        if (args.clustering_domain == 'within_doc'
+                                and args.available_entities == 'knn_candidates'):
+                            # custom w/in doc negative available entities
+                            self.avail_entity_idxs = flatten([
+                                list(filter(
+                                    lambda x : x != c_idxs[0],
+                                    self.train_metadata.midx2cand.get(i, [])
+                                ))
+                                    for i in (c_idxs + neg_midxs)
+                                        if i >= self.train_metadata.num_entities
+                            ])
+
+                        _entity_knn_negs = self.train_knn_index.get_knn_limited_index(
+                                c_idxs[1:],
+                                include_index_idxs=self.avail_entity_idxs,
+                                k=min(num_e_negs, len(self.avail_entity_idxs))
+                        )
+
+                        if _entity_knn_negs.shape[1] < num_e_negs:
+                            assert _entity_knn_negs.shape[1] == len(self.avail_entity_idxs)
+                            _buff = _entity_knn_negs.shape[1] - num_e_negs
+                            negs[1:, -num_e_negs:_buff] = _entity_knn_negs
+                        else:
+                            negs[1:, -num_e_negs:] = _entity_knn_negs
 
                 negatives_list.append(negs)
 
@@ -540,11 +544,11 @@ class ClusterLinkingTrainer(Trainer):
                     if get_rank() == 0:
                         wandb.log(val_metrics, step=global_step)
 
-        logger.info('Training complete')
-        if get_rank() == 0:
-            embed()
-        synchronize()
-        exit()
+        #logger.info('Training complete')
+        #if get_rank() == 0:
+        #    embed()
+        #synchronize()
+        #exit()
 
     def evaluate(self, split='', suffix=''):
         assert split in ['train', 'val', 'test']
@@ -612,8 +616,4 @@ class ClusterLinkingTrainer(Trainer):
         logger.info(metrics)
         logger.info('********** [END] eval: {} **********'.format(split))
 
-        if get_rank() == 0:
-            embed()
-        synchronize()
-        exit()
         return metrics

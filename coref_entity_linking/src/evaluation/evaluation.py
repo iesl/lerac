@@ -66,6 +66,9 @@ def eval_wdoc(args,
         coref_graphs.append(coref_graph)
         linking_graphs.append(linking_graph)
 
+    # build the joint whole graph
+    joint_whole_graph = deepcopy(_merge_sparse_graphs(coref_graphs + linking_graphs))
+
     logger.info('Computing coref metrics...')
     coref_metrics = compute_coref_metrics(
             per_doc_coref_clusters, coref_graphs, args.eval_coref_threshold
@@ -77,6 +80,79 @@ def eval_wdoc(args,
             metadata, linking_graphs
     )
     logger.info('Done.')
+
+
+    ########################################################################
+    ## FIXME: hacking to get HAC working
+    #
+    #joint_whole_graph = _merge_sparse_graphs(coref_graphs + linking_graphs)
+
+    #hierarchy_tree = np.full((2*joint_whole_graph.shape[0], 2), -1)
+    #proposed_merges = np.vstack((joint_whole_graph.row, joint_whole_graph.col)).T
+
+    #def _get_leaves(hierarchy_tree, internal_node):
+    #    q = [internal_node]
+    #    leaves = []
+    #    while len(q) > 0:
+    #        curr_node = q.pop()
+    #        left_child = hierarchy_tree[curr_node][0]
+    #        right_child = hierarchy_tree[curr_node][1]
+    #        if left_child == -1:
+    #            assert right_child == -1
+    #            leaves.append(curr_node)
+    #        else:
+    #            q.append(left_child)
+    #            q.append(right_child)
+    #    return leaves
+
+    #def _avg_linkage(joint_whole_graph, leaves_a, leaves_b):
+    #    row_mask = np.isin(joint_whole_graph.row, leaves_a)\
+    #               ^ np.isin(joint_whole_graph.row, leaves_b)
+    #    col_mask = np.isin(joint_whole_graph.col, leaves_a)\
+    #               ^ np.isin(joint_whole_graph.col, leaves_b)
+    #    edge_weights = joint_whole_graph.data[row_mask & col_mask]
+    #    if edge_weights.size == 0:
+    #        return -np.inf
+    #    return np.mean(edge_weights)
+    #
+    #merge_node_id = joint_whole_graph.shape[0] # start with the next possible index
+    #valid_merge_exists = True
+    #count = 0
+    #while valid_merge_exists:
+    #    valid_merge_exists = False
+    #    max_linkage = 0.0
+    #    max_a, max_b = None, None
+    #    for pair in proposed_merges:
+    #        a, b = tuple(pair)
+    #        if a == b:
+    #            continue
+    #        valid_merge_exists = True
+    #        leaves_a = _get_leaves(hierarchy_tree, a)
+    #        leaves_b = _get_leaves(hierarchy_tree, b)
+    #        linkage_score = _avg_linkage(joint_whole_graph, leaves_a, leaves_b)
+    #        if linkage_score > max_linkage:
+    #            max_a = a
+    #            max_b = b
+    #            max_linkage = linkage_score
+
+    #    if not valid_merge_exists:
+    #        continue
+
+    #    # create new node in the hierarchy with id = `merge_node_id`
+    #    hierarchy_tree[merge_node_id][0] = max_a
+    #    hierarchy_tree[merge_node_id][1] = max_b
+
+    #    # update all the relevant edges in `proposed_merges`
+    #    join_mask = np.isin(proposed_merges, [max_a, max_b])
+    #    proposed_merges[join_mask] = merge_node_id
+
+    #    # increment for next merger
+    #    merge_node_id += 1
+
+    #    count += 1
+    #    print(count)
+
+    ########################################################################
 
     logger.info('Computing joint metrics...')
     slim_coref_graph = _get_global_maximum_spanning_tree(coref_graphs)
@@ -100,6 +176,7 @@ def eval_wdoc(args,
     save_data.update(linking_metrics)
     save_data.update(joint_metrics)
     save_data.update({'metadata': metadata})
+    save_data.update({'joint_whole_graph': joint_whole_graph})
 
     with open(save_fname, 'wb') as f:
         pickle.dump(save_data, f)

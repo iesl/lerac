@@ -442,6 +442,8 @@ class BertSequenceScoringModel(BertPreTrainedModel):
             output = self.concatenation_cls_layer2(output)
             output = output.reshape(batch_size, num_seq, sym_dim)
 
+        output = torch.sigmoid(output)
+
         return output
 
 
