@@ -461,23 +461,16 @@ def build_sparse_affinity_graph(args,
             elif args.available_entities == 'knn_candidates':
                 # get all of the mention kNN
                 if args.clustering_domain == 'within_doc':
-                    avail_eidxs = flatten([
-                            metadata.midx2cand.get(midx, [])
-                                for midx in midxs
-                    ])
-                    cand_gen_knn = knn_index.get_knn_limited_index(
-                            midxs,
-                            include_index_idxs=avail_eidxs,
-                            k=args.k
-                    )
+                    for midx in midxs:
+                        candidates = metadata.midx2cand.get(midx, [])
+                        if len(candidates) > 0:
+                            linking_graph_edges.extend(
+                                [tuple(sorted((midx, eidx))) for eidx in candidates]
+                            )
                 elif args.clustering_domain == 'cross_doc':
-                    pass
+                    raise NotImplementedError('unsupported clustering_domain')
                 else:
                     raise ValueError('unsupported clustering_domain')
-                linking_graph_edges.extend(
-                    [tuple(sorted((a, b)))
-                        for a, l in zip(midxs, cand_gen_knn) for b in l]
-                )
             else: # 'open_domain'
                 # get all of the mention kNN
                 cand_gen_knn = knn_index.get_knn_limited_index(
@@ -507,6 +500,60 @@ def build_sparse_affinity_graph(args,
             linking_graph = coo_matrix((affinities, linking_graph_edges),
                                           shape=(_sparse_num, _sparse_num))
 
+        if args.available_entities == 'knn_candidates':
+            assert args.clustering_domain == 'within_doc'
+
+            # pick expansion edges based on coref knn mentions
+            expansion_factor = 5
+            expansion_edges = []
+            if get_rank() == 0:
+                def _get_top_k(midx, graph, k):
+                    row_entries = graph.getrow(midx).tocoo()
+                    col_entries = graph.getcol(midx).tocoo()
+                    entries = zip(
+                        np.concatenate((row_entries.col, col_entries.row),
+                                       axis=0),
+                        np.concatenate((row_entries.data, col_entries.data),
+                                       axis=0)
+                    )
+                    entries = list(entries)
+                    if len(entries) == 0:
+                        return []
+
+                    sorted_data = sorted(entries, key=lambda x : x[1],
+                                         reverse=True)
+                    top_k, _ = zip(*sorted_data[:k])
+                    return top_k
+
+                top_k_coref = lambda i : _get_top_k(i, coref_graph,
+                                                    expansion_factor)
+                top_k_linking = lambda i : _get_top_k(i, linking_graph,
+                                                      expansion_factor)
+                for midx in midxs:
+                    for coref_midx in top_k_coref(midx):
+                        expansion_edges.extend([
+                            tuple(sorted((x, midx)))
+                                for x in top_k_linking(coref_midx)
+                                    if x not in metadata.midx2cand[midx]
+                        ])
+                expansion_edges = unique(expansion_edges)
+
+            # score the expanded candidate edges
+            expansion_edges = broadcast(expansion_edges, src=0)
+            expansion_affinities = sub_trainer.get_edge_affinities(
+                    expansion_edges, example_dir, knn_index
+            )
+
+            if get_rank() == 0:
+                # build the graph
+                expansion_edges = np.asarray(expansion_edges).T
+                linking_graph_edges = np.concatenate(
+                        (linking_graph_edges, expansion_edges), axis=1
+                )
+                affinities += expansion_affinities
+                _sparse_num = metadata.num_mentions + metadata.num_entities
+                linking_graph = coo_matrix((affinities, linking_graph_edges),
+                                              shape=(_sparse_num, _sparse_num))
 
     return coref_graph, linking_graph
 
