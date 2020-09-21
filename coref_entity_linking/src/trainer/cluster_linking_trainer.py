@@ -290,11 +290,6 @@ class ClusterLinkingTrainer(Trainer):
         #return_dict.update(embed_return_dict)
         return_dict.update(concat_return_dict)
 
-        #if get_rank() == 0:
-        #    embed()
-        #synchronize()
-        #exit()
-
         return return_dict
 
     def _neg_choosing_prep(self):
@@ -599,8 +594,4 @@ class ClusterLinkingTrainer(Trainer):
         logger.info(metrics)
         logger.info('********** [END] eval: {} **********'.format(split))
 
-        if get_rank() == 0:
-            embed()
-        synchronize()
-        exit()
         return metrics

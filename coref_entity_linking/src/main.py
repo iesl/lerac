@@ -254,13 +254,6 @@ def main():
     repo = git.Repo(search_parent_directories=True)
     args.git_hash = repo.head.object.hexsha
     
-    if get_rank() == 0:
-        import wandb
-        wandb.init(project="coref_entity_linking", config=args)
-    else:
-        os.environ['WANDB_MODE'] = 'dryrun'
-
-
     # set logger filename
     if args.do_train:
         logger_filename = "train.log"
