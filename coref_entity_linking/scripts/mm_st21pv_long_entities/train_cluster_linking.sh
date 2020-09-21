@@ -18,7 +18,7 @@ test_domains=( "test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T
 python -m torch.distributed.launch \
     --nproc_per_node 8 \
     src/main.py \
-        --data_dir data/${DATASET}/ \
+        --data_dir ${DATA_DIR}/data/${DATASET}/ \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
