@@ -22,7 +22,7 @@ python -m torch.distributed.launch \
         --model_type bert \
         --model_name_or_path models/biobert_v1.1_pubmed/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_m-e_1/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_m-m_1/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_train \
         --do_val \
@@ -35,7 +35,7 @@ python -m torch.distributed.launch \
         --mention_negatives 'random' \
         --training_method 'triplet_max_margin' \
         --pair_gen_method 'mst' \
-        --training_edges_considered 'm-e' \
+        --training_edges_considered 'm-m' \
         --k 128 \
         --num_train_negs 24 \
         --margin 0.5 \
