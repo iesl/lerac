@@ -441,14 +441,14 @@ class ClusterLinkingTrainer(Trainer):
                 ### FIXME: hack for hyperparameter scheduling
                 #if global_step > 400:
                 #    args.training_edges_considered = 'all'
-                if global_step % 200 == 199:
-                    if get_rank() == 0:
-                        self.embed_sub_trainer.save_model(global_step)
-                    synchronize()
-                    val_metrics = self.evaluate(
-                            split='val',
-                            suffix='checkpoint-{}'.format(global_step)
-                    )
+                #if global_step % 200 == 199:
+                #    if get_rank() == 0:
+                #        self.embed_sub_trainer.save_model(global_step)
+                #    synchronize()
+                #    val_metrics = self.evaluate(
+                #            split='val',
+                #            suffix='checkpoint-{}'.format(global_step)
+                #    )
 
 
                 # get batch from rank0 and broadcast it to the other processes
