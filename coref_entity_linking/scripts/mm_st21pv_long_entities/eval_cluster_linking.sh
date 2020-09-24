@@ -16,10 +16,12 @@ set -eux
 #mkdir -p exp 
 #
 
-#BASE_DIR="/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking"
-BASE_DIR="/home/meta-powerusers/lerac/coref_entity_linking"
-EXTERNAL_BASE_DIR="/home/ds-share/data2/users/rangell/lerac/coref_entity_linking"
+
+BASE_DIR="/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/"
+DATA_DIR="/local/coref_entity_linking/"
+EXTERNAL_BASE_DIR=${BASE_DIR}
 DATASET="mm_st21pv_long_entities"
+
 
 train_domains=( "train" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
 val_domains=( "val" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
@@ -28,11 +30,11 @@ test_domains=( "test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T
 python -m torch.distributed.launch \
     --nproc_per_node 8 \
     src/main.py \
-        --data_dir data/${DATASET}/ \
+        --data_dir ${DATA_DIR}/data/${DATASET}/ \
         --model_type bert \
-        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp18/checkpoint-3721/ \
+        --trained_model_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_mst_2-3_hybrid/checkpoint-3721/ \
         --task_name cluster_linking \
-        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp18/checkpoint-3721/ \
+        --output_dir ${EXTERNAL_BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_mst_2-3_hybrid/checkpoint-3721/ \
         --log_dir ${EXTERNAL_BASE_DIR}/logs/ \
         --do_val \
         --max_seq_length 128 \
@@ -40,12 +42,9 @@ python -m torch.distributed.launch \
         --embed_pooling_strategy 'pool_highlighted_outputs' \
         --concat_pooling_strategy 'pool_highlighted_outputs' \
         --clustering_domain 'within_doc' \
-        --available_entities 'candidates_only' \
+        --available_entities 'knn_candidates' \
         --mention_negatives 'random' \
-        --training_method 'softmax' \
-        --pair_gen_method 'all_pairs' \
-        --training_edges_considered 'all' \
-        --k 16 \
+        --k 128 \
         --per_gpu_infer_batch 256 \
         --evaluate_during_training \
         --logging_steps 25 \
