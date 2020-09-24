@@ -154,14 +154,15 @@ class ConcatenationSubTrainer(object):
                 pos_e_neg_e_losses.extend(_detached_per_triplet_loss[pos_e_neg_e_mask].numpy().tolist())
                 loss = torch.mean(per_triplet_loss)
                 loss.backward()
-            torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    args.max_grad_norm
-            )
-            self.optimizer.step()
-            self.scheduler.step()
-            self.model.zero_grad()
-            time_per_dataset.append(time.time() - _dataset_start_time)
+
+                torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(),
+                        args.max_grad_norm
+                )
+                self.optimizer.step()
+                self.scheduler.step()
+                self.model.zero_grad()
+                time_per_dataset.append(time.time() - _dataset_start_time)
 
         gathered_data = all_gather({
                 'pos_m_neg_m_losses' : pos_m_neg_m_losses,
