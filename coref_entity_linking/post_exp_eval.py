@@ -32,7 +32,7 @@ def load_data_files():
             EXTERNAL_BASE_DIR,
             EXP_ID,
             CKPT_ID,
-            'concat.val.debug_results.pkl'
+            'concat.val.debug_results.knn_candidates.pkl'
     )
 
     concat_results_data = load_pickle_file(concat_fname)
@@ -257,10 +257,10 @@ if __name__ == '__main__':
     col = np.asarray(col, dtype=np.int)
     weights = np.asarray(data, dtype=np.float)
     
-    mask = (weights > 0.5)
-    row = row[mask]
-    col = col[mask]
-    weights = weights[mask]
+    #mask = (weights > 0.2)
+    #row = row[mask]
+    #col = col[mask]
+    #weights = weights[mask]
 
     num_entities = metadata.num_entities
     num_mentions = metadata.num_mentions

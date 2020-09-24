@@ -157,7 +157,7 @@ def special_hac(np.ndarray[INT_t, ndim=1] row,
         merge_node_id += 1
 
         count += 1
-        if count % 10 == 0:
+        if count % 100 == 0:
             print('{} merges in {} sec'.format(count, time.time() - start_time))
 
     return leaves
