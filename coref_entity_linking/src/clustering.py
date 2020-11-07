@@ -79,6 +79,9 @@ class TripletDatasetBuilder(SupervisedClusteringDatasetBuilder):
                 for p, n in zip(pos_list, neg_list):
                     triplets.append((anchor, p, n))
 
+        if len(triplets) == 0:
+            return (None, None), None
+
         # append one big dataset
         embed_dataset_list.append(
                 TripletEmbeddingDataset(
