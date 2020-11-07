@@ -313,6 +313,7 @@ class ConcatenationSubTrainer(object):
         dataset = PairsConcatenationDataset(args, edges, example_dir)
         dataloader = PairsConcatenationDataLoader(args, dataset)
 
+        self.model.eval()
         edge2affinity = {}
         for batch in dataloader:
             with torch.no_grad():
@@ -326,6 +327,7 @@ class ConcatenationSubTrainer(object):
 
                 scores = torch.mean(outputs, -1).squeeze(-1)
                 scores = scores.cpu().numpy().tolist()
+                scores = torch.sigmoid(scores)
 
                 idx_edge_pairs = batch[0].squeeze(1)[:,:,0].cpu().numpy()
                 idx_edge_pairs = [tuple(p) for p in idx_edge_pairs.tolist()]
