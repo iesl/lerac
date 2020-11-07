@@ -447,7 +447,7 @@ class ClusterLinkingTrainer(Trainer):
                             disable=(get_rank() != 0 or args.disable_logging)):
 
                 # evaluate often for the sake of trying to get this correct
-                if global_step % 400 == 19:
+                if global_step % 400 == 0:
                     if get_rank() == 0:
                         self.embed_sub_trainer.save_model(global_step)
                     synchronize()
