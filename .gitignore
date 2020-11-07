@@ -135,3 +135,6 @@ dmypy.json
 coref_entity_linking/data/
 *models/
 *experiments/
+*special_partition.c
+*special_partition.html
+*wandb/
