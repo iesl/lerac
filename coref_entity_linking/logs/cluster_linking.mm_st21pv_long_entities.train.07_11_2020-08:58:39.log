@@ -1,0 +1,252 @@
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 4, device: cuda:4, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 1, device: cuda:1, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 6, device: cuda:6, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 3, device: cuda:3, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 5, device: cuda:5, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 7, device: cuda:7, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 2, device: cuda:2, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/07/20 08:58:39 - 0:00:00 - ============ Initialized logger ============
+INFO - 11/07/20 08:58:39 - 0:00:00 - adam_epsilon: 1e-08
+                                     alpha: None
+                                     available_entities: candidates_only
+                                     cache_dir: 
+                                     clustering_domain: within_doc
+                                     command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_mst_retrain_m-m/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --do_val --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-m' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '0' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '5' --logging_steps '25' --knn_refresh_steps '-1' --evaluate_during_training --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --val_domains 'val' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204'
+                                     concat_pooling_strategy: pool_highlighted_outputs
+                                     config_name: 
+                                     data_dir: /local/coref_entity_linking/data/mm_st21pv_long_entities/
+                                     device: cuda:0
+                                     disable_logging: False
+                                     do_lower_case: False
+                                     do_test: False
+                                     do_train: True
+                                     do_train_eval: False
+                                     do_val: True
+                                     dump_coref_candidate_sets: False
+                                     embed_pooling_strategy: pool_highlighted_outputs
+                                     eval_all_checkpoints: False
+                                     eval_coref_threshold: None
+                                     evaluate_during_training: True
+                                     fp16: False
+                                     fp16_opt_level: O1
+                                     git_hash: 0a443b375ff0b6991af871a743f5e272f0410c12
+                                     gradient_accumulation_steps: 1
+                                     k: 128
+                                     knn_refresh_steps: -1
+                                     learning_rate: 5e-05
+                                     local_rank: 0
+                                     log_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/
+                                     logging_steps: 25
+                                     margin: 0.7
+                                     max_grad_norm: 1.0
+                                     max_seq_length: 128
+                                     max_steps: -1
+                                     mention_negatives: random
+                                     model_name_or_path: models/biobert_v1.1_pubmed/
+                                     model_type: bert
+                                     n_gpu: 1
+                                     no_cuda: False
+                                     num_candidates: 64
+                                     num_candidates_per_example: 16
+                                     num_clusters_per_macro_batch: 16
+                                     num_context_codes: 4
+                                     num_dataloader_workers: 0
+                                     num_train_epochs: 5
+                                     num_train_negs: 24
+                                     output_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_mst_retrain_m-m/
+                                     overwrite_cache: False
+                                     overwrite_output_dir: False
+                                     pair_gen_method: mst
+                                     per_gpu_infer_batch_size: 256
+                                     per_gpu_train_batch_size: 16
+                                     sample_size: None
+                                     save_steps: 50
+                                     seed: 42
+                                     seq_embed_dim: 128
+                                     server_ip: 
+                                     server_port: 
+                                     task_name: cluster_linking
+                                     test_domains: None
+                                     test_mention_entity_scores: None
+                                     tiny_experiment: False
+                                     tokenizer_name: 
+                                     train_domains: ['train', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204']
+                                     train_mention_entity_scores: None
+                                     trained_model_dir: None
+                                     training_edges_considered: m-m
+                                     training_method: triplet_max_margin
+                                     val_domains: ['val', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204']
+                                     val_mention_entity_scores: None
+                                     warmup_steps: 0
+                                     weight_decay: 0.0
+                                     world_size: 8
+INFO - 11/07/20 08:58:39 - 0:00:00 - The experiment will be stored in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_mst_retrain_m-m/
+                                     
+INFO - 11/07/20 08:58:39 - 0:00:00 - Running command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_mst_retrain_m-m/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --do_val --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-m' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '0' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '5' --logging_steps '25' --knn_refresh_steps '-1' --evaluate_during_training --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --val_domains 'val' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204'
+                                     
+WARNING - 11/07/20 08:58:39 - 0:00:00 - Process rank: 0, device: cuda:0, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/07/20 08:58:39 - 0:00:00 - Creating models.
+INFO - 11/07/20 08:58:39 - 0:00:00 - loading configuration file models/biobert_v1.1_pubmed/config.json
+INFO - 11/07/20 08:58:39 - 0:00:00 - Model config BertConfig {
+                                       "attention_probs_dropout_prob": 0.1,
+                                       "finetuning_task": "cluster_linking",
+                                       "hidden_act": "gelu",
+                                       "hidden_dropout_prob": 0.1,
+                                       "hidden_size": 768,
+                                       "initializer_range": 0.02,
+                                       "intermediate_size": 3072,
+                                       "layer_norm_eps": 1e-12,
+                                       "max_position_embeddings": 512,
+                                       "model_type": "bert",
+                                       "num_attention_heads": 12,
+                                       "num_hidden_layers": 12,
+                                       "pad_token_id": 0,
+                                       "type_vocab_size": 2,
+                                       "vocab_size": 28996
+                                     }
+                                     
+INFO - 11/07/20 08:58:39 - 0:00:00 - Model name 'models/biobert_v1.1_pubmed/' not found in model shortcut name list (bert-base-uncased, bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased, bert-base-multilingual-cased, bert-base-chinese, bert-base-german-cased, bert-large-uncased-whole-word-masking, bert-large-cased-whole-word-masking, bert-large-uncased-whole-word-masking-finetuned-squad, bert-large-cased-whole-word-masking-finetuned-squad, bert-base-cased-finetuned-mrpc, bert-base-german-dbmdz-cased, bert-base-german-dbmdz-uncased, TurkuNLP/bert-base-finnish-cased-v1, TurkuNLP/bert-base-finnish-uncased-v1, wietsedv/bert-base-dutch-cased). Assuming 'models/biobert_v1.1_pubmed/' is a path, a model identifier, or url to a directory containing tokenizer files.
+INFO - 11/07/20 08:58:39 - 0:00:00 - Didn't find file models/biobert_v1.1_pubmed/added_tokens.json. We won't load it.
+INFO - 11/07/20 08:58:39 - 0:00:00 - Didn't find file models/biobert_v1.1_pubmed/special_tokens_map.json. We won't load it.
+INFO - 11/07/20 08:58:39 - 0:00:00 - Didn't find file models/biobert_v1.1_pubmed/tokenizer_config.json. We won't load it.
+INFO - 11/07/20 08:58:39 - 0:00:00 - loading file models/biobert_v1.1_pubmed/vocab.txt
+INFO - 11/07/20 08:58:39 - 0:00:00 - loading file None
+INFO - 11/07/20 08:58:39 - 0:00:00 - loading file None
+INFO - 11/07/20 08:58:39 - 0:00:00 - loading file None
+INFO - 11/07/20 08:58:39 - 0:00:00 - loading weights file models/biobert_v1.1_pubmed/pytorch_model.bin
+INFO - 11/07/20 08:58:46 - 0:00:08 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_cls_layer1.weight', 'concatenation_cls_layer1.bias', 'concatenation_cls_layer2.weight', 'concatenation_cls_layer2.bias']
+INFO - 11/07/20 08:58:46 - 0:00:08 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
+INFO - 11/07/20 08:58:46 - 0:00:08 - loading weights file models/biobert_v1.1_pubmed/pytorch_model.bin
+INFO - 11/07/20 08:58:50 - 0:00:11 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_pool_layer1.weight', 'concatenation_pool_layer1.bias', 'concatenation_pool_layer2.weight', 'concatenation_pool_layer2.bias', 'concatenation_pool_layer3.weight', 'concatenation_pool_layer3.bias']
+INFO - 11/07/20 08:58:50 - 0:00:11 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
+INFO - 11/07/20 08:58:50 - 0:00:11 - Loading cached metadata and dataset.
+INFO - 11/07/20 08:59:07 - 0:00:28 - Loading cached metadata and dataset.
+INFO - 11/07/20 08:59:26 - 0:00:47 - Loading cached metadata and dataset.
+INFO - 11/07/20 08:59:46 - 0:01:07 - Loading cached metadata and dataset.
+INFO - 11/07/20 09:00:20 - 0:01:41 - Training/evaluation parameters Namespace(adam_epsilon=1e-08, alpha=None, available_entities='candidates_only', cache_dir='', clustering_domain='within_doc', command="python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_mst_retrain_m-m/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --do_val --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-m' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '0' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '5' --logging_steps '25' --knn_refresh_steps '-1' --evaluate_during_training --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --val_domains 'val' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204'", concat_pooling_strategy='pool_highlighted_outputs', config_name='', data_dir='/local/coref_entity_linking/data/mm_st21pv_long_entities/', device=device(type='cuda', index=0), disable_logging=False, do_lower_case=False, do_test=False, do_train=True, do_train_eval=False, do_val=True, dump_coref_candidate_sets=False, embed_pooling_strategy='pool_highlighted_outputs', eval_all_checkpoints=False, eval_coref_threshold=None, evaluate_during_training=True, fp16=False, fp16_opt_level='O1', git_hash='0a443b375ff0b6991af871a743f5e272f0410c12', gradient_accumulation_steps=1, infer_batch_size=256, k=128, knn_refresh_steps=-1, learning_rate=5e-05, local_rank=0, log_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/', logging_steps=25, margin=0.7, max_grad_norm=1.0, max_seq_length=128, max_steps=-1, mention_negatives='random', model_name_or_path='models/biobert_v1.1_pubmed/', model_type='bert', n_gpu=1, no_cuda=False, num_candidates=64, num_candidates_per_example=16, num_clusters_per_macro_batch=16, num_context_codes=4, num_dataloader_workers=0, num_train_epochs=5, num_train_negs=24, output_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_mst_retrain_m-m/', overwrite_cache=False, overwrite_output_dir=False, pair_gen_method='mst', per_gpu_infer_batch_size=256, per_gpu_train_batch_size=16, sample_size=None, save_steps=50, seed=42, seq_embed_dim=128, server_ip='', server_port='', t_total=18605, task_name='cluster_linking', test_domains=None, test_mention_entity_scores=None, tiny_experiment=False, tokenizer=<transformers.tokenization_bert.BertTokenizer object at 0x2aab1e2a5e10>, tokenizer_name='', train_batch_size=16, train_cache_dir='/local/coref_entity_linking/data/mm_st21pv_long_entities/cache/train', train_domains=['train', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204'], train_mention_entity_scores=None, trained_model_dir=None, training_edges_considered='m-m', training_method='triplet_max_margin', val_cache_dir='/local/coref_entity_linking/data/mm_st21pv_long_entities/cache/val', val_domains=['val', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204'], val_mention_entity_scores=None, warmup_steps=0, weight_decay=0.0, world_size=8)
+INFO - 11/07/20 09:00:20 - 0:01:41 - Creating sub-trainers.
+INFO - 11/07/20 09:00:20 - 0:01:41 - Successfully created trainer object
+INFO - 11/07/20 09:00:20 - 0:01:42 - Starting training...
+INFO - 11/07/20 09:00:20 - 0:01:42 - ********** [START] epoch: 0 **********
+INFO - 11/07/20 09:00:20 - 0:01:42 - num_batches: 3721
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_loss: 0.4986153435984295 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_num_examples: 267.52 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_m_neg_m_loss: 0.4986153435984295 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_m_neg_m_num_examples: 267.52 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 25
+INFO - 11/07/20 09:05:51 - 0:07:12 - Using m-m edges for training
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_loss: 0.0774462342086442 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_num_examples: 312.96 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_m_neg_m_loss: 0.0774462342086442 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_m_neg_m_num_examples: 312.96 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 50
+INFO - 11/07/20 09:12:09 - 0:13:30 - Using m-m edges for training
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_loss: 0.026941602863344027 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_num_examples: 238.4 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_m_neg_m_loss: 0.026941602863344027 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_m_neg_m_num_examples: 238.4 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 75
+INFO - 11/07/20 09:17:12 - 0:18:33 - Using m-m edges for training
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_loss: 0.022588214642360143 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_num_examples: 266.24 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_m_neg_m_loss: 0.022588214642360143 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_m_neg_m_num_examples: 266.24 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 100
+INFO - 11/07/20 09:22:48 - 0:24:09 - Using m-m edges for training
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_loss: 0.029353064188958618 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_num_examples: 216.96 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_m_neg_m_loss: 0.029353064188958618 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_m_neg_m_num_examples: 216.96 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 125
+INFO - 11/07/20 09:27:32 - 0:28:54 - Using m-m edges for training
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_loss: 0.026085468781325595 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_num_examples: 296.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_m_neg_m_loss: 0.026085468781325595 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_m_neg_m_num_examples: 296.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 150
+INFO - 11/07/20 09:33:30 - 0:34:52 - Using m-m edges for training
+INFO - 11/07/20 09:39:19 - 0:40:41 - Average concat_loss: 0.029011622582441894 at global step: 175
+INFO - 11/07/20 09:39:19 - 0:40:41 - Average concat_num_examples: 276.48 at global step: 175
+INFO - 11/07/20 09:39:19 - 0:40:41 - Average concat_pos_m_neg_m_loss: 0.029011622582441894 at global step: 175
+INFO - 11/07/20 09:39:19 - 0:40:41 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 175
+INFO - 11/07/20 09:39:19 - 0:40:41 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 175
+INFO - 11/07/20 09:39:20 - 0:40:41 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 175
+INFO - 11/07/20 09:39:20 - 0:40:41 - Average concat_pos_m_neg_m_num_examples: 276.48 at global step: 175
+INFO - 11/07/20 09:39:20 - 0:40:41 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 175
+INFO - 11/07/20 09:39:20 - 0:40:41 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 175
+INFO - 11/07/20 09:39:20 - 0:40:41 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 175
+INFO - 11/07/20 09:39:20 - 0:40:41 - Using m-m edges for training
+INFO - 11/07/20 09:44:36 - 0:45:57 - Average concat_loss: 0.014210766197661588 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_num_examples: 249.28 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_m_neg_m_loss: 0.014210766197661588 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_m_neg_m_num_examples: 249.28 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 200
+INFO - 11/07/20 09:44:36 - 0:45:58 - Using m-m edges for training
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_loss: 0.03009760099697218 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_num_examples: 242.56 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_m_neg_m_loss: 0.03009760099697218 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_m_neg_m_num_examples: 242.56 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 225
+INFO - 11/07/20 09:49:41 - 0:51:03 - Using m-m edges for training
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_loss: 0.022444308881534238 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_num_examples: 264.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_m_neg_m_loss: 0.022444308881534238 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_m_neg_m_num_examples: 264.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 250
+INFO - 11/07/20 09:55:11 - 0:56:32 - Using m-m edges for training
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_loss: 0.02214679100103814 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_num_examples: 307.2 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_m_neg_m_loss: 0.02214679100103814 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_m_neg_m_num_examples: 307.2 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 275
+INFO - 11/07/20 10:01:32 - 1:02:54 - Using m-m edges for training
