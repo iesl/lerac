@@ -446,9 +446,14 @@ class ClusterLinkingTrainer(Trainer):
                             desc='Epoch: {} - Batches'.format(epoch),
                             disable=(get_rank() != 0 or args.disable_logging)):
 
-                ## FIXME: hack for hyperparameter scheduling
-                #if global_step > 400:
-                #    args.training_edges_considered = 'all'
+                # evaluate often for the sake of trying to get this correct
+                if global_step % 400 == 399:
+                    val_metrics = self.evaluate(
+                            split='val',
+                            suffix='checkpoint-{}'.format(global_step)
+                    )
+                    if get_rank() == 0:
+                        wandb.log(val_metrics, step=global_step)
 
                 # get batch from rank0 and broadcast it to the other processes
                 if get_rank() == 0:
