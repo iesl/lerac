@@ -34,7 +34,7 @@ python -m torch.distributed.launch \
         --k '128' \
         --num_train_negs '24' \
         --margin '0.7' \
-        --warmup_steps '0' \
+        --warmup_steps '100' \
         --learning_rate '5e-5' \
         --max_grad_norm '1.0' \
         --num_clusters_per_macro_batch '16' \
