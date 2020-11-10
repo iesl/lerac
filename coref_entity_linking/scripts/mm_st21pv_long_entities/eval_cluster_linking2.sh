@@ -28,9 +28,8 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' \
         --model_type 'bert' \
-        --model_name_or_path 'models/biobert_v1.1_pubmed/' \
-        --task_name 'cluster_linking' \
         --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-3721/ \
+        --task_name 'cluster_linking' \
         --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-3721/ \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_val \
