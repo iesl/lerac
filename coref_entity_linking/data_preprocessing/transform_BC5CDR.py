@@ -4,17 +4,19 @@ import json
 from collections import defaultdict
 from tqdm import tqdm
 
-from pytorch_transformers.tokenization_bert import BertTokenizer
+from transformers.tokenization_bert import BertTokenizer
 
 from IPython import embed
 
 
-PUBTATOR_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/corpus_pubtator.txt'
-PRED_PUBTATOR_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/pred_corpus_pubtator.txt'
-PRED_MATCHES_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/matches_pred_corpus_pubtator.tsv'
-PMIDS_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/corpus_pubtator_pmids_test.txt'
-DATA_DIR = '/mnt/nfs/scratch1/rangell/BLINK/data/'
+#PRED_PUBTATOR_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/pred_corpus_pubtator.txt'
+#PRED_MATCHES_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/matches_pred_corpus_pubtator.tsv'
+#DATA_DIR = '/mnt/nfs/scratch1/rangell/BLINK/data/'
+
 DATASET = 'BC5CDR'
+REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
+PMIDS_FILE = REPO_ROOT + 'data/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+PUBTATOR_FILE = REPO_ROOT + 'data/BC5CDR/CDR.2.PubTator'
 
 OUTPUT_DIR = '/mnt/nfs/scratch1/rangell/lerac/data/{}'.format(DATASET)
 
@@ -23,13 +25,14 @@ if __name__ == '__main__':
 
     # get tokenizer
     tokenizer = BertTokenizer(
-        '../lerac/coref_entity_linking/models/biobert_v1.1_pubmed/vocab.txt',
+        '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'\
+            'models/biobert_v1.1_pubmed/vocab.txt',
         do_lower_case=False
     )
 
-    # get all test pmids
-    with open(TEST_PMIDS_FILE, 'r') as f:
-        test_pmids = set(map(lambda x : x.strip(), f.readlines()))
+    # get all pmids
+    with open(PMIDS_FILE, 'r') as f:
+        pmids = set(map(lambda x : x.strip(), f.readlines()))
 
     # get all of the documents
     raw_docs = defaultdict(str)
@@ -38,17 +41,20 @@ if __name__ == '__main__':
         for line in f:
             line_split = line.split('|')
             if len(line_split) == 3:
-                if line_split[0] not in test_pmids:
+                if line_split[0] not in pmids:
                     continue
                 _text_to_add = ' ' if line_split[1] == 'a' else ''
                 _text_to_add += line_split[2].strip()
                 raw_docs[line_split[0]] += _text_to_add
             line_split = line.strip().split('\t')
             if len(line_split) == 6:
-                if line_split[0] not in test_pmids:
+                if line_split[0] not in pmids:
                     continue
                 gold_key = (line_split[0],line_split[1], line_split[2])
                 gold_mention_labels[gold_key] = line_split[-1].replace('UMLS:', '')
+
+    embed()
+    exit()
 
     # get taggerOne predictions
     taggerOne_pred_mention_types = {}
