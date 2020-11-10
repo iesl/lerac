@@ -9,14 +9,13 @@ from transformers.tokenization_bert import BertTokenizer
 from IPython import embed
 
 
-#PRED_PUBTATOR_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/pred_corpus_pubtator.txt'
-#PRED_MATCHES_FILE = '/mnt/nfs/scratch1/rangell/BLINK/tmp/matches_pred_corpus_pubtator.tsv'
 #DATA_DIR = '/mnt/nfs/scratch1/rangell/BLINK/data/'
 
 DATASET = 'BC5CDR'
 REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
-PMIDS_FILE = REPO_ROOT + 'data/BC5CDR/BC5CDR_traindev_PMIDs.txt'
-PUBTATOR_FILE = REPO_ROOT + 'data/BC5CDR/CDR.2.PubTator'
+PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
 
 OUTPUT_DIR = '/mnt/nfs/scratch1/rangell/lerac/data/{}'.format(DATASET)
 
@@ -39,35 +38,21 @@ if __name__ == '__main__':
     gold_mention_labels = {}
     with open(PUBTATOR_FILE, 'r') as f:
         for line in f:
-            line_split = line.split('|')
-            if len(line_split) == 3:
-                if line_split[0] not in pmids:
-                    continue
-                _text_to_add = ' ' if line_split[1] == 'a' else ''
-                _text_to_add += line_split[2].strip()
-                raw_docs[line_split[0]] += _text_to_add
             line_split = line.strip().split('\t')
             if len(line_split) == 6:
                 if line_split[0] not in pmids:
                     continue
                 gold_key = (line_split[0],line_split[1], line_split[2])
                 gold_mention_labels[gold_key] = line_split[-1].replace('UMLS:', '')
-
-    embed()
-    exit()
-
-    # get taggerOne predictions
-    taggerOne_pred_mention_types = {}
-    taggerOne_pred_mention_labels = {}
-    with open(PRED_PUBTATOR_FILE, 'r') as f:
-        for line in f:
-            line_split = line.strip().split('\t')
-            if len(line_split) == 6:
-                if line_split[0] not in test_pmids:
-                    continue
-                pred_key = (line_split[0],line_split[1], line_split[2])
-                taggerOne_pred_mention_types[pred_key] = line_split[4]
-                taggerOne_pred_mention_labels[pred_key] = line_split[5].replace('UMLS:', '')
+            else:
+                line_split = line.split('|')
+                if len(line_split) == 3:
+                    assert line_split[1] in ['a', 't']
+                    if line_split[0] not in pmids:
+                        continue
+                    _text_to_add = ' ' if line_split[1] == 'a' else ''
+                    _text_to_add += line_split[2].strip()
+                    raw_docs[line_split[0]] += _text_to_add
 
     # tokenize all of the documents
     tokenized_docs = {}
@@ -77,29 +62,29 @@ if __name__ == '__main__':
         tokenized_docs[pmid] = tokenized_text
 
     # get all of the mentions and their tfidf candidates in raw form
-    print('Reading pred mentions and tfidf candidates...')
-    pred_mention_cands = defaultdict(list)
-    with open(PRED_MATCHES_FILE, 'r') as f:
+    print('Reading mentions and tfidf candidates...')
+    mention_cands = defaultdict(list)
+    with open(MATCHES_FILE, 'r') as f:
         reader = csv.reader(f, delimiter="\t", quotechar='"')
         keys = next(reader)
         for row in tqdm(reader):
-            if row[0] not in test_pmids:
+            if row[0] not in pmids:
                 continue
-            pred_mention_key = (row[0], row[1], row[2])
-            pred_mention_cand_val = {k : v for k, v in zip(keys, row)}
-            pred_mention_cands[pred_mention_key].append(pred_mention_cand_val)
+            mention_key = (row[0], row[1], row[2])
+            mention_cand_val = {k : v for k, v in zip(keys, row)}
+            mention_cands[mention_key].append(mention_cand_val)
     print('Done.')
-    
-    # organize mentions by pmid
-    pred_mentions = defaultdict(list)
-    for key, value in pred_mention_cands.items():
-        pred_mentions[key[0]].append(value[0])
 
-    # sort the predicted mentions in each doc
-    for key in list(pred_mentions.keys()):
-        pred_mentions[key] = sorted(pred_mentions[key], key=lambda x : int(x['char_start']))
+    # organize mentions by pmid
+    mentions = defaultdict(list)
+    for key, value in mention_cands.items():
+        mentions[key[0]].append(value[0])
+    
+    # sort the mentions in each doc
+    for key in list(mentions.keys()):
+        mentions[key] = sorted(mentions[key], key=lambda x : int(x['char_start']))
         _mentions = []
-        for m in pred_mentions[key]:
+        for m in mentions[key]:
             condition = any(
                 [((int(m['char_start']) >= int(x['char_start'])
                      and int(m['char_start']) <= int(x['char_end']))
@@ -107,12 +92,14 @@ if __name__ == '__main__':
                      and int(m['char_end']) <= int(x['char_end'])))
                  and (m['char_start'] != x['char_start'] or m['char_end'] != x['char_end'])
                  and (int(m['char_end']) - int(m['char_start']) <= int(x['char_end']) - int(x['char_start']))
-                    for x in pred_mentions[key]]
+                    for x in mentions[key]]
             )
             if not condition:
                 _mentions.append(m)
-        pred_mentions[key] = _mentions
+        mentions[key] = _mentions
 
+    embed()
+    exit()
 
     # do a token match and get the start offset
     def get_offset(index_list, query_list, start_offset):
@@ -126,13 +113,12 @@ if __name__ == '__main__':
                 return i
         return -1
 
-
     # process mentions
     mention_objs = []
     tfidf_candidate_objs = []
-    for pmid, mentions in tqdm(pred_mentions.items(), desc='Process mentions'):
+    for pmid, _mentions in tqdm(mentions.items(), desc='Process mentions'):
         start_offset = 0
-        for i, m in enumerate(mentions):
+        for i, m in enumerate(_mentions):
 
             # tokenize meniton and expanded mention
             tokenized_mention = tokenizer.tokenize(m['mention'])
@@ -168,19 +154,13 @@ if __name__ == '__main__':
                 'category': m['mention_tid'],
                 'label_document_id': gold_mention_labels.get(
                         (pmid, start_char, end_char), None
-                    ),
-                'taggerOne_pred_document_id': taggerOne_pred_mention_labels.get(
-                        (pmid, start_char, end_char), None
-                    ),
-                'taggerOne_pred_type': taggerOne_pred_mention_types.get(
-                        (pmid, start_char, end_char), None
                     )
             }
             mention_objs.append(mention_obj)
 
             # get candidates
             tfidf_cand_cuids = []
-            for cand in pred_mention_cands[(pmid, start_char, end_char)]:
+            for cand in mention_cands[(pmid, start_char, end_char)]:
                 tfidf_cand_cuids.append(cand['match_cuid'])
 
             # create tfidf candidates object and add to list
@@ -193,15 +173,15 @@ if __name__ == '__main__':
             tokenized_docs[pmid] = ' '.join(tokenized_doc)
 
     # write to output files
-    with open('taggerOne_test_mentions.jsonl', 'w') as f:
+    with open('mentions.jsonl', 'w') as f:
         for m in mention_objs:
             f.write(json.dumps(m) + '\n')
 
-    with open('taggerOne_test_tfidf_candidates.jsonl', 'w') as f:
+    with open('tfidf_candidates.jsonl', 'w') as f:
         for c in tfidf_candidate_objs:
             f.write(json.dumps(c) + '\n')
 
-    with open('taggerOne_test_documents.jsonl', 'w') as f:
+    with open('documents.jsonl', 'w') as f:
         for pmid, doc_text in tokenized_docs.items():
             doc_dict = {
                 'document_id' : pmid,
