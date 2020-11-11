@@ -28,9 +28,9 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' \
         --model_type 'bert' \
-        --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-3721/ \
+        --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-7442/ \
         --task_name 'cluster_linking' \
-        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-3721/ \
+        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-7442/ \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_val \
         --max_seq_length 128 \
