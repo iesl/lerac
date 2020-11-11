@@ -13,9 +13,16 @@ from IPython import embed
 
 DATASET = 'BC5CDR'
 REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
-PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
-PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_sample_PMIDs.txt'
+PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
+#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
 MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
+ENTITY_FILES = [
+    REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv',
+    REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_diseases-2015-06-04.tsv'
+]
 
 OUTPUT_DIR = '/mnt/nfs/scratch1/rangell/lerac/data/{}'.format(DATASET)
 
@@ -28,6 +35,26 @@ if __name__ == '__main__':
             'models/biobert_v1.1_pubmed/vocab.txt',
         do_lower_case=False
     )
+
+    # process entity files
+    entity_dict = {}
+    for raw_entity_file in ENTITY_FILES:
+        with open(raw_entity_file, 'r') as f:
+            for line in f:
+                if line[0] == '#':
+                    continue
+                line_cols = line.strip().split('\t')
+                name = line_cols[0]
+                cuid = line_cols[1].replace('MESH:', '')
+                synonyms = line_cols[-1].split('|')
+                entity_obj = {
+                    'document_id': cuid,
+                    'title': name,
+                    'text': '{} ( {} )'.format(
+                            name, ' ; '.join(synonyms)
+                        )
+                }
+                entity_dict[cuid] = entity_obj
 
     # get all pmids
     with open(PMIDS_FILE, 'r') as f:
@@ -43,7 +70,9 @@ if __name__ == '__main__':
                 if line_split[0] not in pmids:
                     continue
                 gold_key = (line_split[0],line_split[1], line_split[2])
-                gold_mention_labels[gold_key] = line_split[-1].replace('UMLS:', '')
+                gold_mention_labels[gold_key] = [
+                    s.replace('UMLS:', '') for s in line_split[-1].split('|')
+                ]
             else:
                 line_split = line.split('|')
                 if len(line_split) == 3:
@@ -98,9 +127,6 @@ if __name__ == '__main__':
                 _mentions.append(m)
         mentions[key] = _mentions
 
-    embed()
-    exit()
-
     # do a token match and get the start offset
     def get_offset(index_list, query_list, start_offset):
         for i in range(start_offset, len(index_list)):
@@ -153,9 +179,11 @@ if __name__ == '__main__':
                 'text' : ' '.join(tokenized_mention_exp),
                 'category': m['mention_tid'],
                 'label_document_id': gold_mention_labels.get(
-                        (pmid, start_char, end_char), None
+                        (pmid, start_char, end_char), []
                     )
             }
+
+            # add the mention object to the list
             mention_objs.append(mention_obj)
 
             # get candidates
@@ -189,3 +217,7 @@ if __name__ == '__main__':
                 'text' : doc_text
             }
             f.write(json.dumps(doc_dict) + '\n')
+
+    with open('entity_documents.jsonl', 'w') as f:
+        for ent in entity_dict.values():
+            f.write(json.dumps(ent) + '\n')
