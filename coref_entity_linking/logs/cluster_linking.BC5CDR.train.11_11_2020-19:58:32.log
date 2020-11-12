@@ -643,3 +643,32 @@ INFO - 11/12/20 09:32:04 - 13:33:32 - Average concat_pos_m_neg_e_num_examples: 0
 INFO - 11/12/20 09:32:04 - 13:33:32 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1150
 INFO - 11/12/20 09:32:04 - 13:33:32 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 1150
 INFO - 11/12/20 09:32:04 - 13:33:32 - Using m-m edges for training
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_loss: 0.0031675500540498305 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_num_examples: 413.92 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_m_neg_m_loss: 0.0031675500540498305 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_m_neg_m_num_examples: 413.92 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 1175
+INFO - 11/12/20 09:50:01 - 13:51:29 - Using m-m edges for training
+INFO - 11/12/20 10:03:04 - 14:04:32 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-m/checkpoint-1194/affinity_model_model/m_e_model/config.json
+INFO - 11/12/20 10:03:19 - 14:04:47 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-m/checkpoint-1194/affinity_model_model/m_e_model/pytorch_model.bin
+INFO - 11/12/20 10:03:19 - 14:04:47 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-m/checkpoint-1194/affinity_model_model/m_m_model/config.json
+INFO - 11/12/20 10:03:30 - 14:04:58 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-m/checkpoint-1194/affinity_model_model/m_m_model/pytorch_model.bin
+INFO - 11/12/20 10:03:31 - 14:04:59 - ********** [END] epoch: 2 **********
+INFO - 11/12/20 10:03:31 - 14:04:59 - ********** [START] epoch: 3 **********
+INFO - 11/12/20 10:03:31 - 14:04:59 - num_batches: 398
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_loss: 0.002757426937573651 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_num_examples: 399.04 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_m_neg_m_loss: 0.002757426937573651 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_e_neg_e_loss: 0.0 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_m_neg_m_num_examples: 399.04 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Average concat_pos_e_neg_e_num_examples: 0.0 at global step: 1200
+INFO - 11/12/20 10:07:38 - 14:09:06 - Using m-m edges for training
