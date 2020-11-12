@@ -189,3 +189,14 @@ INFO - 11/12/20 11:12:18 - 2:03:47 - Average concat_pos_m_neg_e_num_examples: 0.
 INFO - 11/12/20 11:12:18 - 2:03:47 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 150
 INFO - 11/12/20 11:12:18 - 2:03:47 - Average concat_pos_e_neg_e_num_examples: 556.32 at global step: 150
 INFO - 11/12/20 11:12:18 - 2:03:47 - Using m-e edges for training
+INFO - 11/12/20 11:33:49 - 2:25:15 - Average concat_loss: 0.17715918731855354 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_num_examples: 569.28 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_e_neg_e_loss: 0.17715918731855354 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Average concat_pos_e_neg_e_num_examples: 569.28 at global step: 175
+INFO - 11/12/20 11:33:50 - 2:25:19 - Using m-e edges for training

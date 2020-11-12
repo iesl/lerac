@@ -45,7 +45,7 @@ if __name__ == '__main__':
                     continue
                 line_cols = line.strip().split('\t')
                 name = line_cols[0]
-                cuid = line_cols[1].replace('MESH:', '')
+                cuid = line_cols[1].replace('MESH:', '').replace('OMIM:', '')
                 synonyms = line_cols[-1].split('|')
                 entity_obj = {
                     'document_id': cuid,

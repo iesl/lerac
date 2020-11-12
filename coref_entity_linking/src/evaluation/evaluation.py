@@ -35,7 +35,7 @@ def eval_wdoc(args,
     saved_graphs_fname = os.path.join(
         os.path.dirname(save_fname), 'raw_graphs.pkl'
     )
-    if not os.path.exists(save_graphs_fname):
+    if not os.path.exists(saved_graphs_fname):
         logger.info('Building within doc sparse graphs...')
         doc_level_graphs = []
         per_doc_coref_clusters = []
@@ -61,10 +61,10 @@ def eval_wdoc(args,
 
         logger.info('Done.')
 
-        with open(save_graphs_fname, 'wb') as f:
+        with open(saved_graphs_fname, 'wb') as f:
             pickle.dump(doc_level_graphs, f)
     else:
-        with open(save_graphs_fname, 'rb') as f:
+        with open(saved_graphs_fname, 'rb') as f:
             doc_level_graphs = pickle.load(f)
         
     if get_rank() == 0:
@@ -396,10 +396,14 @@ def build_sparse_affinity_graph(args,
             if args.available_entities == 'candidates_only':
                 for midx in midxs:
                     candidates = metadata.midx2cand.get(midx, [])
-                    if len(candidates) > 0:
-                        linking_graph_edges.extend(
-                            [tuple(sorted((midx, eidx))) for eidx in candidates]
-                        )
+                    try:
+                        if len(candidates) > 0:
+                            linking_graph_edges.extend(
+                                [tuple(sorted((midx, eidx))) for eidx in candidates]
+                            )
+                    except:
+                        embed()
+                        exit()
             elif args.available_entities == 'knn_candidates':
                 # get all of the mention kNN
                 if args.clustering_domain == 'within_doc':
