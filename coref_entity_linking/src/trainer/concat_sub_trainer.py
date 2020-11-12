@@ -325,7 +325,7 @@ class ConcatenationSubTrainer(object):
                 outputs = self.model(**inputs)
 
                 scores = torch.mean(outputs, -1).squeeze(-1)
-                scores = torch.sigmoid(scores)
+                #scores = torch.sigmoid(scores)
                 scores = scores.cpu().numpy().tolist()
 
                 idx_edge_pairs = batch[0].squeeze(1)[:,:,0].cpu().numpy()
