@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from copy import deepcopy
 import logging
@@ -30,30 +31,48 @@ def eval_wdoc(args,
               save_fname=None):
     assert save_fname != None
 
-    logger.info('Building within doc sparse graphs...')
-    doc_level_graphs = []
-    per_doc_coref_clusters = []
-    for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
-        per_doc_coref_clusters.append(
-                [[x for x in v if x != k] for k, v in doc_clusters.items()]
-        )
-        doc_mentions = np.asarray([x for k, v in doc_clusters.items()
-                                        for x in v if x != k])
-        doc_mentions = np.sort(doc_mentions)
-        doc_level_graphs.append(
-            build_sparse_affinity_graph(
-                args,
-                doc_mentions,
-                example_dir,
-                metadata,
-                None,
-                sub_trainer,
-                build_coref_graph=True,
-                build_linking_graph=True
+    ### >>> FOR DEBUGGING: REMOVE LATER
+    saved_graphs_fname = os.path.join(
+        os.path.dirname(save_fname), 'raw_graphs.pkl'
+    )
+    if not os.path.exists(save_graphs_fname):
+        logger.info('Building within doc sparse graphs...')
+        doc_level_graphs = []
+        per_doc_coref_clusters = []
+        for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
+            per_doc_coref_clusters.append(
+                    [[x for x in v if x != k] for k, v in doc_clusters.items()]
             )
-        )
+            doc_mentions = np.asarray([x for k, v in doc_clusters.items()
+                                            for x in v if x != k])
+            doc_mentions = np.sort(doc_mentions)
+            doc_level_graphs.append(
+                build_sparse_affinity_graph(
+                    args,
+                    doc_mentions,
+                    example_dir,
+                    metadata,
+                    None,
+                    sub_trainer,
+                    build_coref_graph=True,
+                    build_linking_graph=True
+                )
+            )
 
-    logger.info('Done.')
+        logger.info('Done.')
+
+        with open(save_graphs_fname, 'wb') as f:
+            pickle.dump(doc_level_graphs, f)
+    else:
+        with open(save_graphs_fname, 'rb') as f:
+            doc_level_graphs = pickle.load(f)
+        
+    if get_rank() == 0:
+        embed()
+    synchronize()
+    exit()
+
+    ### <<< FOR DEBUGGING: REMOVE LATER
 
     # don't need other processes at this point
     if get_rank() != 0:

@@ -39,7 +39,7 @@ python -m torch.distributed.launch \
         --num_clusters_per_macro_batch '16' \
         --per_gpu_train_batch_size '16' \
         --per_gpu_infer_batch_size '256' \
-        --num_train_epochs '5' \
+        --num_train_epochs '3' \
         --logging_steps '25' \
         --knn_refresh_steps '-1' \
         --train_domains 'train' 'entity_documents' \
