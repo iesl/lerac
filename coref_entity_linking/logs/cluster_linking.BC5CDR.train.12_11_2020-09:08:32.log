@@ -1,0 +1,136 @@
+INFO - 11/12/20 09:08:32 - 0:00:00 - ============ Initialized logger ============
+INFO - 11/12/20 09:08:32 - 0:00:00 - adam_epsilon: 1e-08
+                                     alpha: None
+                                     available_entities: candidates_only
+                                     cache_dir: 
+                                     clustering_domain: within_doc
+                                     command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/BC5CDR/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-e/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-e' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '100' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '5' --logging_steps '25' --knn_refresh_steps '-1' --train_domains 'train' 'entity_documents' --val_domains 'val' 'entity_documents'
+                                     concat_pooling_strategy: pool_highlighted_outputs
+                                     config_name: 
+                                     data_dir: /local/coref_entity_linking/data/BC5CDR/
+                                     device: cuda:0
+                                     disable_logging: False
+                                     do_lower_case: False
+                                     do_test: False
+                                     do_train: True
+                                     do_train_eval: False
+                                     do_val: False
+                                     dump_coref_candidate_sets: False
+                                     embed_pooling_strategy: pool_highlighted_outputs
+                                     eval_all_checkpoints: False
+                                     eval_coref_threshold: None
+                                     evaluate_during_training: False
+                                     fp16: False
+                                     fp16_opt_level: O1
+                                     git_hash: d03eda6804bcee2535a7dedb83faa5f359ea2bfe
+                                     gradient_accumulation_steps: 1
+                                     k: 128
+                                     knn_refresh_steps: -1
+                                     learning_rate: 5e-05
+                                     local_rank: 0
+                                     log_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/
+                                     logging_steps: 25
+                                     margin: 0.7
+                                     max_grad_norm: 1.0
+                                     max_seq_length: 128
+                                     max_steps: -1
+                                     mention_negatives: random
+                                     model_name_or_path: models/biobert_v1.1_pubmed/
+                                     model_type: bert
+                                     n_gpu: 1
+                                     no_cuda: False
+                                     num_candidates: 64
+                                     num_candidates_per_example: 16
+                                     num_clusters_per_macro_batch: 16
+                                     num_context_codes: 4
+                                     num_dataloader_workers: 0
+                                     num_train_epochs: 5
+                                     num_train_negs: 24
+                                     output_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-e/
+                                     overwrite_cache: False
+                                     overwrite_output_dir: False
+                                     pair_gen_method: mst
+                                     per_gpu_infer_batch_size: 256
+                                     per_gpu_train_batch_size: 16
+                                     sample_size: None
+                                     save_steps: 50
+                                     seed: 42
+                                     seq_embed_dim: 128
+                                     server_ip: 
+                                     server_port: 
+                                     task_name: cluster_linking
+                                     test_domains: None
+                                     test_mention_entity_scores: None
+                                     tiny_experiment: False
+                                     tokenizer_name: 
+                                     train_domains: ['train', 'entity_documents']
+                                     train_mention_entity_scores: None
+                                     trained_model_dir: None
+                                     training_edges_considered: m-e
+                                     training_method: triplet_max_margin
+                                     val_domains: ['val', 'entity_documents']
+                                     val_mention_entity_scores: None
+                                     warmup_steps: 100
+                                     weight_decay: 0.0
+                                     world_size: 4
+INFO - 11/12/20 09:08:32 - 0:00:00 - The experiment will be stored in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-e/
+                                     
+INFO - 11/12/20 09:08:32 - 0:00:00 - Running command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/BC5CDR/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-e/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-e' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '100' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '5' --logging_steps '25' --knn_refresh_steps '-1' --train_domains 'train' 'entity_documents' --val_domains 'val' 'entity_documents'
+                                     
+WARNING - 11/12/20 09:08:32 - 0:00:00 - Process rank: 0, device: cuda:0, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/12/20 09:08:32 - 0:00:00 - Creating models.
+WARNING - 11/12/20 09:08:32 - 0:00:00 - Process rank: 3, device: cuda:3, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/12/20 09:08:32 - 0:00:00 - Process rank: 1, device: cuda:1, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/12/20 09:08:32 - 0:00:00 - Process rank: 2, device: cuda:2, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/12/20 09:08:33 - 0:00:02 - loading configuration file models/biobert_v1.1_pubmed/config.json
+INFO - 11/12/20 09:08:33 - 0:00:02 - Model config BertConfig {
+                                       "attention_probs_dropout_prob": 0.1,
+                                       "finetuning_task": "cluster_linking",
+                                       "hidden_act": "gelu",
+                                       "hidden_dropout_prob": 0.1,
+                                       "hidden_size": 768,
+                                       "initializer_range": 0.02,
+                                       "intermediate_size": 3072,
+                                       "layer_norm_eps": 1e-12,
+                                       "max_position_embeddings": 512,
+                                       "model_type": "bert",
+                                       "num_attention_heads": 12,
+                                       "num_hidden_layers": 12,
+                                       "pad_token_id": 0,
+                                       "type_vocab_size": 2,
+                                       "vocab_size": 28996
+                                     }
+                                     
+INFO - 11/12/20 09:08:33 - 0:00:02 - Model name 'models/biobert_v1.1_pubmed/' not found in model shortcut name list (bert-base-uncased, bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased, bert-base-multilingual-cased, bert-base-chinese, bert-base-german-cased, bert-large-uncased-whole-word-masking, bert-large-cased-whole-word-masking, bert-large-uncased-whole-word-masking-finetuned-squad, bert-large-cased-whole-word-masking-finetuned-squad, bert-base-cased-finetuned-mrpc, bert-base-german-dbmdz-cased, bert-base-german-dbmdz-uncased, TurkuNLP/bert-base-finnish-cased-v1, TurkuNLP/bert-base-finnish-uncased-v1, wietsedv/bert-base-dutch-cased). Assuming 'models/biobert_v1.1_pubmed/' is a path, a model identifier, or url to a directory containing tokenizer files.
+INFO - 11/12/20 09:08:34 - 0:00:02 - Didn't find file models/biobert_v1.1_pubmed/added_tokens.json. We won't load it.
+INFO - 11/12/20 09:08:34 - 0:00:02 - Didn't find file models/biobert_v1.1_pubmed/special_tokens_map.json. We won't load it.
+INFO - 11/12/20 09:08:34 - 0:00:02 - Didn't find file models/biobert_v1.1_pubmed/tokenizer_config.json. We won't load it.
+INFO - 11/12/20 09:08:34 - 0:00:02 - loading file models/biobert_v1.1_pubmed/vocab.txt
+INFO - 11/12/20 09:08:34 - 0:00:02 - loading file None
+INFO - 11/12/20 09:08:34 - 0:00:02 - loading file None
+INFO - 11/12/20 09:08:34 - 0:00:02 - loading file None
+INFO - 11/12/20 09:08:34 - 0:00:02 - loading weights file models/biobert_v1.1_pubmed/pytorch_model.bin
+INFO - 11/12/20 09:08:46 - 0:00:14 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_cls_layer1.weight', 'concatenation_cls_layer1.bias', 'concatenation_cls_layer2.weight', 'concatenation_cls_layer2.bias']
+INFO - 11/12/20 09:08:46 - 0:00:14 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
+INFO - 11/12/20 09:08:46 - 0:00:14 - loading weights file models/biobert_v1.1_pubmed/pytorch_model.bin
+INFO - 11/12/20 09:08:50 - 0:00:18 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_pool_layer1.weight', 'concatenation_pool_layer1.bias', 'concatenation_pool_layer2.weight', 'concatenation_pool_layer2.bias', 'concatenation_pool_layer3.weight', 'concatenation_pool_layer3.bias']
+INFO - 11/12/20 09:08:50 - 0:00:18 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
+INFO - 11/12/20 09:08:50 - 0:00:18 - Loading cached metadata and dataset.
+INFO - 11/12/20 09:08:59 - 0:00:27 - Loading cached metadata and dataset.
+INFO - 11/12/20 09:09:04 - 0:00:33 - Training/evaluation parameters Namespace(adam_epsilon=1e-08, alpha=None, available_entities='candidates_only', cache_dir='', clustering_domain='within_doc', command="python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/BC5CDR/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-e/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-e' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '100' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '5' --logging_steps '25' --knn_refresh_steps '-1' --train_domains 'train' 'entity_documents' --val_domains 'val' 'entity_documents'", concat_pooling_strategy='pool_highlighted_outputs', config_name='', data_dir='/local/coref_entity_linking/data/BC5CDR/', device=device(type='cuda', index=0), disable_logging=False, do_lower_case=False, do_test=False, do_train=True, do_train_eval=False, do_val=False, dump_coref_candidate_sets=False, embed_pooling_strategy='pool_highlighted_outputs', eval_all_checkpoints=False, eval_coref_threshold=None, evaluate_during_training=False, fp16=False, fp16_opt_level='O1', git_hash='d03eda6804bcee2535a7dedb83faa5f359ea2bfe', gradient_accumulation_steps=1, infer_batch_size=256, k=128, knn_refresh_steps=-1, learning_rate=5e-05, local_rank=0, log_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/', logging_steps=25, margin=0.7, max_grad_norm=1.0, max_seq_length=128, max_steps=-1, mention_negatives='random', model_name_or_path='models/biobert_v1.1_pubmed/', model_type='bert', n_gpu=1, no_cuda=False, num_candidates=64, num_candidates_per_example=16, num_clusters_per_macro_batch=16, num_context_codes=4, num_dataloader_workers=0, num_train_epochs=5, num_train_negs=24, output_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-e/', overwrite_cache=False, overwrite_output_dir=False, pair_gen_method='mst', per_gpu_infer_batch_size=256, per_gpu_train_batch_size=16, sample_size=None, save_steps=50, seed=42, seq_embed_dim=128, server_ip='', server_port='', t_total=1990, task_name='cluster_linking', test_domains=None, test_mention_entity_scores=None, tiny_experiment=False, tokenizer=<transformers.tokenization_bert.BertTokenizer object at 0x2aab1e2a5e90>, tokenizer_name='', train_batch_size=16, train_cache_dir='/local/coref_entity_linking/data/BC5CDR/cache/train', train_domains=['train', 'entity_documents'], train_mention_entity_scores=None, trained_model_dir=None, training_edges_considered='m-e', training_method='triplet_max_margin', val_domains=['val', 'entity_documents'], val_mention_entity_scores=None, warmup_steps=100, weight_decay=0.0, world_size=4)
+INFO - 11/12/20 09:09:04 - 0:00:33 - Creating sub-trainers.
+INFO - 11/12/20 09:09:04 - 0:00:33 - Successfully created trainer object
+INFO - 11/12/20 09:09:04 - 0:00:33 - Starting training...
+INFO - 11/12/20 09:09:04 - 0:00:33 - ********** [START] epoch: 0 **********
+INFO - 11/12/20 09:09:04 - 0:00:33 - num_batches: 398
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_loss: 0.700469189283067 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_num_examples: 564.96 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_e_neg_e_loss: 0.700469189283067 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Average concat_pos_e_neg_e_num_examples: 564.96 at global step: 25
+INFO - 11/12/20 09:30:05 - 0:21:34 - Using m-e edges for training

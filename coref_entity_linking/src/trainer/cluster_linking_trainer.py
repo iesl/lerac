@@ -134,7 +134,12 @@ class ClusterLinkingTrainer(Trainer):
         if args.available_entities in ['candidates_only', 'knn_candidates']:
             examples = flatten([[k] + v
                     for k, v in self.train_metadata.midx2cand.items()])
-            examples.extend(self.train_metadata.midx2eidx.values())
+            if isinstance(list(self.train_metadata.midx2eidx.values())[0], list):
+                examples.extend(
+                    flatten(list(self.train_metadata.midx2eidx.values()))
+                )
+            else:
+                examples.extend(self.train_metadata.midx2eidx.values())
         elif args.available_entities == 'open_domain':
             examples = list(self.train_metadata.idx2uid.keys())
         else:
@@ -323,6 +328,7 @@ class ClusterLinkingTrainer(Trainer):
         negatives_list = []
         clusters = [sorted(batch.getrow(i).data.tolist())
                         for i in range(batch.shape[0])]
+
         for c_idxs in clusters:
             if args.clustering_domain == 'within_doc':
                 # get mention idxs within document
@@ -330,6 +336,22 @@ class ClusterLinkingTrainer(Trainer):
 
                 # produce available negative mention idxs
                 neg_midxs = [m for m in doc_midxs if m not in c_idxs]
+
+                # extra filtering for BC5CDR
+                if isinstance(list(self.train_metadata.midx2eidx.values())[0], list):
+                    pos_cluster_eidxs = set(flatten([
+                        self.train_metadata.midx2eidx[x] for x in c_idxs
+                            if x >= self.train_metadata.num_entities
+                    ]))
+                    # make sure there isn't any overlap in gold entities
+                    neg_midxs = list(filter(
+                        lambda x : len(
+                            set(self.train_metadata.midx2eidx[x]).intersection(
+                                pos_cluster_eidxs
+                            )
+                        ) == 0,
+                        neg_midxs
+                    ))
 
                 # determine the number of mention negatives
                 num_m_negs = min(args.k // 2, len(neg_midxs))
@@ -367,14 +389,25 @@ class ClusterLinkingTrainer(Trainer):
                 # NOTE: this doesn't allow negative e-e edges (there are never any positive ones)
                 num_e_negs = args.k - num_m_negs
                 if args.available_entities == 'candidates_only':
-                    neg_eidxs = [
-                        list(filter(
-                            lambda x : x != c_idxs[0],
-                            self.train_metadata.midx2cand.get(i, [])
-                        ))[:num_e_negs]
-                            for i in c_idxs
-                                if i >= self.train_metadata.num_entities
-                    ]
+                    if isinstance(list(self.train_metadata.midx2eidx.values())[0], list):
+                        neg_eidxs = [
+                            list(filter(
+                                lambda x : x not in self.train_metadata.midx2eidx[i]
+                                            and x is not None,
+                                self.train_metadata.midx2cand.get(i, [])
+                            ))[:num_e_negs]
+                                for i in c_idxs
+                                    if i >= self.train_metadata.num_entities
+                        ]
+                    else:
+                        neg_eidxs = [
+                            list(filter(
+                                lambda x : x != c_idxs[0],
+                                self.train_metadata.midx2cand.get(i, [])
+                            ))[:num_e_negs]
+                                for i in c_idxs
+                                    if i >= self.train_metadata.num_entities
+                        ]
                     neg_eidxs = [
                         l + [-1] * (num_e_negs - len(l))
                             for l in neg_eidxs
@@ -445,18 +478,6 @@ class ClusterLinkingTrainer(Trainer):
             for _ in trange(num_batches,
                             desc='Epoch: {} - Batches'.format(epoch),
                             disable=(get_rank() != 0 or args.disable_logging)):
-
-                # evaluate often for the sake of trying to get this correct
-                if global_step % 1500 == 1499:
-                    if get_rank() == 0:
-                        self.embed_sub_trainer.save_model(global_step)
-                    synchronize()
-                    val_metrics = self.evaluate(
-                            split='val',
-                            suffix='checkpoint-{}'.format(global_step)
-                    )
-                    if get_rank() == 0:
-                        wandb.log(val_metrics, step=global_step)
 
                 # get batch from rank0 and broadcast it to the other processes
                 if get_rank() == 0:

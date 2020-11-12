@@ -209,14 +209,26 @@ class ZeshelPreprocessor(object):
             )
             global_idx += 1
 
+        train_no_label_count = 0
+
         # preprocess mentions
         for mention in tqdm.tqdm(mentions.values(),
                                  desc="convert mentions to features"):
             uid = mention['mention_id']
             ctxt_uid = mention['context_document_id']
             label_uid = mention['label_document_id']
-            label_idx = uid2idx[label_uid]
+            if isinstance(label_uid, list):
+                label_idx = [uid2idx[x] for x in label_uid]
+                label_idx = list(filter(lambda x : x is not None, label_idx))
+            else:
+                label_idx = uid2idx[label_uid]
             mention_type = mention['category']
+
+            # ignore all BC5CDR training examples which have no gold label
+            if split == 'train' and isinstance(label_idx, list) \
+                    and label_idx == [None]:
+                train_no_label_count += 1
+                continue
 
             # track metadata
             num_mentions += 1
@@ -226,10 +238,18 @@ class ZeshelPreprocessor(object):
                                              candidates.get(uid, [])))
             midx2eidx[global_idx] = label_idx
             midx2type[global_idx] = mention_type
-            wdoc_clusters[ctxt_uid][label_idx].add(label_idx)
-            wdoc_clusters[ctxt_uid][label_idx].add(global_idx)
-            xdoc_clusters[label_idx].add(global_idx)
-            xdoc_clusters[label_idx].add(label_idx)
+            if isinstance(label_idx, list): # multiple possibilities for BC5CDR
+                for idx in label_idx:
+                    assert idx is not None
+                    wdoc_clusters[ctxt_uid][idx].add(idx)
+                    wdoc_clusters[ctxt_uid][idx].add(global_idx)
+                    xdoc_clusters[idx].add(global_idx)
+                    xdoc_clusters[idx].add(idx)
+            else:
+                wdoc_clusters[ctxt_uid][label_idx].add(label_idx)
+                wdoc_clusters[ctxt_uid][label_idx].add(global_idx)
+                xdoc_clusters[label_idx].add(global_idx)
+                xdoc_clusters[label_idx].add(label_idx)
 
             # preprocess mention sequence
             mention_context_ids = self.get_mention_input_ids(
