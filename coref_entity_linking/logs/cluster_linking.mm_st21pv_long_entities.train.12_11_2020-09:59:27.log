@@ -120,3 +120,5 @@ INFO - 11/12/20 09:59:38 - 0:00:11 - loading weights file models/biobert_v1.1_pu
 INFO - 11/12/20 09:59:42 - 0:00:15 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_pool_layer1.weight', 'concatenation_pool_layer1.bias', 'concatenation_pool_layer2.weight', 'concatenation_pool_layer2.bias', 'concatenation_pool_layer3.weight', 'concatenation_pool_layer3.bias']
 INFO - 11/12/20 09:59:42 - 0:00:15 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
 INFO - 11/12/20 09:59:42 - 0:00:15 - Creating metadata and dataset...
+INFO - 11/12/20 10:36:54 - 0:37:28 - Done.
+INFO - 11/12/20 10:36:54 - 0:37:28 - Loading cached metadata and dataset.
