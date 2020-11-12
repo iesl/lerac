@@ -13,11 +13,11 @@ from IPython import embed
 
 DATASET = 'BC5CDR'
 REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
-#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
 #PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_sample_PMIDs.txt'
-PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
-#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
-PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
+#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
+PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
 MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
 ENTITY_FILES = [
     REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv',
