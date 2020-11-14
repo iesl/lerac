@@ -1,0 +1,663 @@
+WARNING - 11/13/20 19:23:35 - 0:00:00 - Process rank: 2, device: cuda:2, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/13/20 19:23:35 - 0:00:00 - ============ Initialized logger ============
+INFO - 11/13/20 19:23:35 - 0:00:00 - adam_epsilon: 1e-08
+                                     alpha: None
+                                     available_entities: candidates_only
+                                     cache_dir: 
+                                     clustering_domain: within_doc
+                                     command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/BC5CDR/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-e' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '100' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '3' --logging_steps '25' --knn_refresh_steps '-1' --train_domains 'train' 'entity_documents' --val_domains 'val' 'entity_documents'
+                                     concat_pooling_strategy: pool_highlighted_outputs
+                                     config_name: 
+                                     data_dir: /local/coref_entity_linking/data/BC5CDR/
+                                     device: cuda:0
+                                     disable_logging: False
+                                     do_lower_case: False
+                                     do_test: False
+                                     do_train: True
+                                     do_train_eval: False
+                                     do_val: False
+                                     dump_coref_candidate_sets: False
+                                     embed_pooling_strategy: pool_highlighted_outputs
+                                     eval_all_checkpoints: False
+                                     eval_coref_threshold: None
+                                     evaluate_during_training: False
+                                     fp16: False
+                                     fp16_opt_level: O1
+                                     git_hash: de0d44f2212384981eb53df52afd72f43b498df3
+                                     gradient_accumulation_steps: 1
+                                     k: 128
+                                     knn_refresh_steps: -1
+                                     learning_rate: 5e-05
+                                     local_rank: 0
+                                     log_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/
+                                     logging_steps: 25
+                                     margin: 0.7
+                                     max_grad_norm: 1.0
+                                     max_seq_length: 128
+                                     max_steps: -1
+                                     mention_negatives: random
+                                     model_name_or_path: models/biobert_v1.1_pubmed/
+                                     model_type: bert
+                                     n_gpu: 1
+                                     no_cuda: False
+                                     num_candidates: 64
+                                     num_candidates_per_example: 16
+                                     num_clusters_per_macro_batch: 16
+                                     num_context_codes: 4
+                                     num_dataloader_workers: 0
+                                     num_train_epochs: 3
+                                     num_train_negs: 24
+                                     output_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/
+                                     overwrite_cache: False
+                                     overwrite_output_dir: False
+                                     pair_gen_method: mst
+                                     per_gpu_infer_batch_size: 256
+                                     per_gpu_train_batch_size: 16
+                                     sample_size: None
+                                     save_steps: 50
+                                     seed: 42
+                                     seq_embed_dim: 128
+                                     server_ip: 
+                                     server_port: 
+                                     task_name: cluster_linking
+                                     test_domains: None
+                                     test_mention_entity_scores: None
+                                     tiny_experiment: False
+                                     tokenizer_name: 
+                                     train_domains: ['train', 'entity_documents']
+                                     train_mention_entity_scores: None
+                                     trained_model_dir: None
+                                     training_edges_considered: m-e
+                                     training_method: triplet_max_margin
+                                     val_domains: ['val', 'entity_documents']
+                                     val_mention_entity_scores: None
+                                     warmup_steps: 100
+                                     weight_decay: 0.0
+                                     world_size: 4
+INFO - 11/13/20 19:23:35 - 0:00:00 - The experiment will be stored in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/
+                                     
+INFO - 11/13/20 19:23:35 - 0:00:00 - Running command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/BC5CDR/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-e' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '100' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '3' --logging_steps '25' --knn_refresh_steps '-1' --train_domains 'train' 'entity_documents' --val_domains 'val' 'entity_documents'
+                                     
+WARNING - 11/13/20 19:23:35 - 0:00:00 - Process rank: 0, device: cuda:0, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/13/20 19:23:35 - 0:00:00 - Process rank: 3, device: cuda:3, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/13/20 19:23:35 - 0:00:00 - Creating models.
+WARNING - 11/13/20 19:23:35 - 0:00:00 - Process rank: 1, device: cuda:1, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/13/20 19:23:35 - 0:00:00 - loading configuration file models/biobert_v1.1_pubmed/config.json
+INFO - 11/13/20 19:23:35 - 0:00:00 - Model config BertConfig {
+                                       "attention_probs_dropout_prob": 0.1,
+                                       "finetuning_task": "cluster_linking",
+                                       "hidden_act": "gelu",
+                                       "hidden_dropout_prob": 0.1,
+                                       "hidden_size": 768,
+                                       "initializer_range": 0.02,
+                                       "intermediate_size": 3072,
+                                       "layer_norm_eps": 1e-12,
+                                       "max_position_embeddings": 512,
+                                       "model_type": "bert",
+                                       "num_attention_heads": 12,
+                                       "num_hidden_layers": 12,
+                                       "pad_token_id": 0,
+                                       "type_vocab_size": 2,
+                                       "vocab_size": 28996
+                                     }
+                                     
+INFO - 11/13/20 19:23:35 - 0:00:00 - Model name 'models/biobert_v1.1_pubmed/' not found in model shortcut name list (bert-base-uncased, bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased, bert-base-multilingual-cased, bert-base-chinese, bert-base-german-cased, bert-large-uncased-whole-word-masking, bert-large-cased-whole-word-masking, bert-large-uncased-whole-word-masking-finetuned-squad, bert-large-cased-whole-word-masking-finetuned-squad, bert-base-cased-finetuned-mrpc, bert-base-german-dbmdz-cased, bert-base-german-dbmdz-uncased, TurkuNLP/bert-base-finnish-cased-v1, TurkuNLP/bert-base-finnish-uncased-v1, wietsedv/bert-base-dutch-cased). Assuming 'models/biobert_v1.1_pubmed/' is a path, a model identifier, or url to a directory containing tokenizer files.
+INFO - 11/13/20 19:23:35 - 0:00:00 - Didn't find file models/biobert_v1.1_pubmed/added_tokens.json. We won't load it.
+INFO - 11/13/20 19:23:35 - 0:00:00 - Didn't find file models/biobert_v1.1_pubmed/special_tokens_map.json. We won't load it.
+INFO - 11/13/20 19:23:35 - 0:00:00 - Didn't find file models/biobert_v1.1_pubmed/tokenizer_config.json. We won't load it.
+INFO - 11/13/20 19:23:35 - 0:00:00 - loading file models/biobert_v1.1_pubmed/vocab.txt
+INFO - 11/13/20 19:23:35 - 0:00:00 - loading file None
+INFO - 11/13/20 19:23:35 - 0:00:00 - loading file None
+INFO - 11/13/20 19:23:35 - 0:00:00 - loading file None
+INFO - 11/13/20 19:23:35 - 0:00:00 - loading weights file models/biobert_v1.1_pubmed/pytorch_model.bin
+INFO - 11/13/20 19:23:39 - 0:00:05 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_cls_layer1.weight', 'concatenation_cls_layer1.bias', 'concatenation_cls_layer2.weight', 'concatenation_cls_layer2.bias']
+INFO - 11/13/20 19:23:39 - 0:00:05 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
+INFO - 11/13/20 19:23:39 - 0:00:05 - loading weights file models/biobert_v1.1_pubmed/pytorch_model.bin
+INFO - 11/13/20 19:23:44 - 0:00:09 - Weights of BertSequenceScoringModel not initialized from pretrained model: ['concatenation_pool_layer1.weight', 'concatenation_pool_layer1.bias', 'concatenation_pool_layer2.weight', 'concatenation_pool_layer2.bias', 'concatenation_pool_layer3.weight', 'concatenation_pool_layer3.bias']
+INFO - 11/13/20 19:23:44 - 0:00:09 - Weights from pretrained model not used in BertSequenceScoringModel: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias']
+INFO - 11/13/20 19:23:44 - 0:00:09 - Creating metadata and dataset...
+INFO - 11/13/20 19:26:41 - 0:03:06 - Done.
+INFO - 11/13/20 19:26:41 - 0:03:07 - Loading cached metadata and dataset.
+INFO - 11/13/20 19:26:47 - 0:03:12 - Training/evaluation parameters Namespace(adam_epsilon=1e-08, alpha=None, available_entities='candidates_only', cache_dir='', clustering_domain='within_doc', command="python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/BC5CDR/' --model_type 'bert' --model_name_or_path 'models/biobert_v1.1_pubmed/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_train --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --mention_negatives 'random' --training_method 'triplet_max_margin' --pair_gen_method 'mst' --training_edges_considered 'm-e' --k '128' --num_train_negs '24' --margin '0.7' --warmup_steps '100' --learning_rate '5e-5' --max_grad_norm '1.0' --num_clusters_per_macro_batch '16' --per_gpu_train_batch_size '16' --per_gpu_infer_batch_size '256' --num_train_epochs '3' --logging_steps '25' --knn_refresh_steps '-1' --train_domains 'train' 'entity_documents' --val_domains 'val' 'entity_documents'", concat_pooling_strategy='pool_highlighted_outputs', config_name='', data_dir='/local/coref_entity_linking/data/BC5CDR/', device=device(type='cuda', index=0), disable_logging=False, do_lower_case=False, do_test=False, do_train=True, do_train_eval=False, do_val=False, dump_coref_candidate_sets=False, embed_pooling_strategy='pool_highlighted_outputs', eval_all_checkpoints=False, eval_coref_threshold=None, evaluate_during_training=False, fp16=False, fp16_opt_level='O1', git_hash='de0d44f2212384981eb53df52afd72f43b498df3', gradient_accumulation_steps=1, infer_batch_size=256, k=128, knn_refresh_steps=-1, learning_rate=5e-05, local_rank=0, log_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/', logging_steps=25, margin=0.7, max_grad_norm=1.0, max_seq_length=128, max_steps=-1, mention_negatives='random', model_name_or_path='models/biobert_v1.1_pubmed/', model_type='bert', n_gpu=1, no_cuda=False, num_candidates=64, num_candidates_per_example=16, num_clusters_per_macro_batch=16, num_context_codes=4, num_dataloader_workers=0, num_train_epochs=3, num_train_negs=24, output_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/', overwrite_cache=False, overwrite_output_dir=False, pair_gen_method='mst', per_gpu_infer_batch_size=256, per_gpu_train_batch_size=16, sample_size=None, save_steps=50, seed=42, seq_embed_dim=128, server_ip='', server_port='', t_total=1194, task_name='cluster_linking', test_domains=None, test_mention_entity_scores=None, tiny_experiment=False, tokenizer=<transformers.tokenization_bert.BertTokenizer object at 0x2aab1e297ed0>, tokenizer_name='', train_batch_size=16, train_cache_dir='/local/coref_entity_linking/data/BC5CDR/cache/train', train_domains=['train', 'entity_documents'], train_mention_entity_scores=None, trained_model_dir=None, training_edges_considered='m-e', training_method='triplet_max_margin', val_domains=['val', 'entity_documents'], val_mention_entity_scores=None, warmup_steps=100, weight_decay=0.0, world_size=4)
+INFO - 11/13/20 19:26:47 - 0:03:12 - Creating sub-trainers.
+INFO - 11/13/20 19:26:47 - 0:03:12 - Successfully created trainer object
+INFO - 11/13/20 19:26:47 - 0:03:12 - Starting training...
+INFO - 11/13/20 19:26:47 - 0:03:12 - ********** [START] epoch: 0 **********
+INFO - 11/13/20 19:26:47 - 0:03:12 - num_batches: 398
+INFO - 11/13/20 19:47:46 - 0:24:10 - Average concat_loss: 0.7004441537515298 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_num_examples: 564.96 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_e_neg_e_loss: 0.7004441537515298 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Average concat_pos_e_neg_e_num_examples: 564.96 at global step: 25
+INFO - 11/13/20 19:47:46 - 0:24:11 - Using m-e edges for training
+INFO - 11/13/20 20:07:52 - 0:44:18 - Average concat_loss: 0.5598356663100413 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_num_examples: 540.32 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_e_neg_e_loss: 0.5598356663100413 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Average concat_pos_e_neg_e_num_examples: 540.32 at global step: 50
+INFO - 11/13/20 20:07:53 - 0:44:18 - Using m-e edges for training
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_loss: 0.31277167189143795 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_num_examples: 585.6 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_e_neg_e_loss: 0.31277167189143795 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Average concat_pos_e_neg_e_num_examples: 585.6 at global step: 75
+INFO - 11/13/20 20:29:36 - 1:06:01 - Using m-e edges for training
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_loss: 0.27507674455510794 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_num_examples: 518.4 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_e_neg_e_loss: 0.27507674455510794 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Average concat_pos_e_neg_e_num_examples: 518.4 at global step: 100
+INFO - 11/13/20 20:48:59 - 1:25:24 - Using m-e edges for training
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_loss: 0.23278631808277936 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_num_examples: 524.16 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_e_neg_e_loss: 0.23278631808277936 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Average concat_pos_e_neg_e_num_examples: 524.16 at global step: 125
+INFO - 11/13/20 21:08:43 - 1:45:08 - Using m-e edges for training
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_loss: 0.2383318132778178 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_num_examples: 556.32 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_e_neg_e_loss: 0.2383318132778178 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Average concat_pos_e_neg_e_num_examples: 556.32 at global step: 150
+INFO - 11/13/20 21:29:46 - 2:06:11 - Using m-e edges for training
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_loss: 0.1821541427766829 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_num_examples: 569.28 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_e_neg_e_loss: 0.1821541427766829 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Average concat_pos_e_neg_e_num_examples: 569.28 at global step: 175
+INFO - 11/13/20 21:51:16 - 2:27:41 - Using m-e edges for training
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_loss: 0.18085006624675273 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_num_examples: 556.8 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_e_neg_e_loss: 0.18085006624675273 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Average concat_pos_e_neg_e_num_examples: 556.8 at global step: 200
+INFO - 11/13/20 22:12:21 - 2:48:46 - Using m-e edges for training
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_loss: 0.1897059928163551 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_num_examples: 491.04 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_e_neg_e_loss: 0.1897059928163551 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Average concat_pos_e_neg_e_num_examples: 491.04 at global step: 225
+INFO - 11/13/20 22:31:08 - 3:07:34 - Using m-e edges for training
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_loss: 0.1964673938120593 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_num_examples: 588.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_e_neg_e_loss: 0.1964673938120593 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Average concat_pos_e_neg_e_num_examples: 588.0 at global step: 250
+INFO - 11/13/20 22:53:20 - 3:29:45 - Using m-e edges for training
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_loss: 0.13987079352954576 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_num_examples: 538.56 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_e_neg_e_loss: 0.13987079352954576 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Average concat_pos_e_neg_e_num_examples: 538.56 at global step: 275
+INFO - 11/13/20 23:13:36 - 3:50:01 - Using m-e edges for training
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_loss: 0.1713562307108235 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_num_examples: 500.64 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_e_neg_e_loss: 0.1713562307108235 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Average concat_pos_e_neg_e_num_examples: 500.64 at global step: 300
+INFO - 11/13/20 23:32:43 - 4:09:08 - Using m-e edges for training
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_loss: 0.12933447597507364 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_num_examples: 544.96 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_e_neg_e_loss: 0.12933447597507364 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Average concat_pos_e_neg_e_num_examples: 544.96 at global step: 325
+INFO - 11/13/20 23:53:13 - 4:29:38 - Using m-e edges for training
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_loss: 0.1064625845839998 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_num_examples: 531.36 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_e_neg_e_loss: 0.1064625845839998 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Average concat_pos_e_neg_e_num_examples: 531.36 at global step: 350
+INFO - 11/14/20 00:13:19 - 4:49:44 - Using m-e edges for training
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_loss: 0.14909749656623705 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_num_examples: 483.84 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_e_neg_e_loss: 0.14909749656623705 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Average concat_pos_e_neg_e_num_examples: 483.84 at global step: 375
+INFO - 11/14/20 00:31:46 - 5:08:11 - Using m-e edges for training
+INFO - 11/14/20 00:50:07 - 5:26:32 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-398/affinity_model_model/m_e_model/config.json
+INFO - 11/14/20 00:50:25 - 5:26:50 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-398/affinity_model_model/m_e_model/pytorch_model.bin
+INFO - 11/14/20 00:50:25 - 5:26:50 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-398/affinity_model_model/m_m_model/config.json
+INFO - 11/14/20 00:50:59 - 5:27:25 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-398/affinity_model_model/m_m_model/pytorch_model.bin
+INFO - 11/14/20 00:51:00 - 5:27:25 - ********** [END] epoch: 0 **********
+INFO - 11/14/20 00:51:00 - 5:27:25 - ********** [START] epoch: 1 **********
+INFO - 11/14/20 00:51:00 - 5:27:25 - num_batches: 398
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_loss: 0.13948153677824104 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_num_examples: 527.04 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_e_neg_e_loss: 0.13948153677824104 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Average concat_pos_e_neg_e_num_examples: 527.04 at global step: 400
+INFO - 11/14/20 00:52:37 - 5:29:02 - Using m-e edges for training
+INFO - 11/14/20 01:12:13 - 5:48:38 - Average concat_loss: 0.0857007731919118 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_num_examples: 518.4 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_e_neg_e_loss: 0.0857007731919118 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Average concat_pos_e_neg_e_num_examples: 518.4 at global step: 425
+INFO - 11/14/20 01:12:14 - 5:48:39 - Using m-e edges for training
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_loss: 0.08973911727207146 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_num_examples: 531.36 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_e_neg_e_loss: 0.08973911727207146 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Average concat_pos_e_neg_e_num_examples: 531.36 at global step: 450
+INFO - 11/14/20 01:32:25 - 6:08:50 - Using m-e edges for training
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_loss: 0.09614020354292131 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_num_examples: 542.4 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_e_neg_e_loss: 0.09614020354292131 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Average concat_pos_e_neg_e_num_examples: 542.4 at global step: 475
+INFO - 11/14/20 01:53:06 - 6:29:31 - Using m-e edges for training
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_loss: 0.07691411584658724 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_num_examples: 566.88 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_e_neg_e_loss: 0.07691411584658724 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Average concat_pos_e_neg_e_num_examples: 566.88 at global step: 500
+INFO - 11/14/20 02:14:30 - 6:50:55 - Using m-e edges for training
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_loss: 0.07627686962642338 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_num_examples: 507.36 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_e_neg_e_loss: 0.07627686962642338 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Average concat_pos_e_neg_e_num_examples: 507.36 at global step: 525
+INFO - 11/14/20 02:33:54 - 7:10:19 - Using m-e edges for training
+INFO - 11/14/20 02:54:46 - 7:31:10 - Average concat_loss: 0.0615104708816982 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_num_examples: 546.72 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_e_neg_e_loss: 0.0615104708816982 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Average concat_pos_e_neg_e_num_examples: 546.72 at global step: 550
+INFO - 11/14/20 02:54:46 - 7:31:12 - Using m-e edges for training
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_loss: 0.07119368791263543 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_num_examples: 530.88 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_e_neg_e_loss: 0.07119368791263543 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Average concat_pos_e_neg_e_num_examples: 530.88 at global step: 575
+INFO - 11/14/20 03:14:59 - 7:51:24 - Using m-e edges for training
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_loss: 0.07080853384110951 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_num_examples: 527.84 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_e_neg_e_loss: 0.07080853384110951 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Average concat_pos_e_neg_e_num_examples: 527.84 at global step: 600
+INFO - 11/14/20 03:34:55 - 8:11:20 - Using m-e edges for training
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_loss: 0.10045981589881901 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_num_examples: 533.44 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_e_neg_e_loss: 0.10045981589881901 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Average concat_pos_e_neg_e_num_examples: 533.44 at global step: 625
+INFO - 11/14/20 03:54:53 - 8:31:18 - Using m-e edges for training
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_loss: 0.08951679042501602 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_num_examples: 566.4 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_e_neg_e_loss: 0.08951679042501602 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Average concat_pos_e_neg_e_num_examples: 566.4 at global step: 650
+INFO - 11/14/20 04:16:45 - 8:53:10 - Using m-e edges for training
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_loss: 0.09304301416996685 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_num_examples: 545.28 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_e_neg_e_loss: 0.09304301416996685 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Average concat_pos_e_neg_e_num_examples: 545.28 at global step: 675
+INFO - 11/14/20 04:37:30 - 9:13:55 - Using m-e edges for training
+INFO - 11/14/20 04:58:11 - 9:34:35 - Average concat_loss: 0.10892696677987827 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_num_examples: 541.92 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_e_neg_e_loss: 0.10892696677987827 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Average concat_pos_e_neg_e_num_examples: 541.92 at global step: 700
+INFO - 11/14/20 04:58:11 - 9:34:36 - Using m-e edges for training
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_loss: 0.065192797993399 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_num_examples: 571.68 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_e_neg_e_loss: 0.065192797993399 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Average concat_pos_e_neg_e_num_examples: 571.68 at global step: 725
+INFO - 11/14/20 05:19:37 - 9:56:02 - Using m-e edges for training
+INFO - 11/14/20 05:39:48 - 10:16:12 - Average concat_loss: 0.06135272246780735 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_num_examples: 525.12 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_e_neg_e_loss: 0.06135272246780735 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Average concat_pos_e_neg_e_num_examples: 525.12 at global step: 750
+INFO - 11/14/20 05:39:48 - 10:16:13 - Using m-e edges for training
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_loss: 0.05684090672622921 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_num_examples: 536.64 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_e_neg_e_loss: 0.05684090672622921 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Average concat_pos_e_neg_e_num_examples: 536.64 at global step: 775
+INFO - 11/14/20 06:00:28 - 10:36:53 - Using m-e edges for training
+INFO - 11/14/20 06:17:31 - 10:53:56 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-796/affinity_model_model/m_e_model/config.json
+INFO - 11/14/20 06:18:11 - 10:54:36 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-796/affinity_model_model/m_e_model/pytorch_model.bin
+INFO - 11/14/20 06:18:11 - 10:54:36 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-796/affinity_model_model/m_m_model/config.json
+INFO - 11/14/20 06:18:58 - 10:55:23 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-796/affinity_model_model/m_m_model/pytorch_model.bin
+INFO - 11/14/20 06:19:08 - 10:55:32 - ********** [END] epoch: 1 **********
+INFO - 11/14/20 06:19:09 - 10:55:34 - ********** [START] epoch: 2 **********
+INFO - 11/14/20 06:19:09 - 10:55:34 - num_batches: 398
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_loss: 0.06414889391837042 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_num_examples: 526.56 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_e_neg_e_loss: 0.06414889391837042 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Average concat_pos_e_neg_e_num_examples: 526.56 at global step: 800
+INFO - 11/14/20 06:22:14 - 10:58:39 - Using m-e edges for training
+INFO - 11/14/20 06:43:32 - 11:19:56 - Average concat_loss: 0.0401869618898843 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_num_examples: 559.52 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_e_neg_e_loss: 0.0401869618898843 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Average concat_pos_e_neg_e_num_examples: 559.52 at global step: 825
+INFO - 11/14/20 06:43:32 - 11:19:58 - Using m-e edges for training
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_loss: 0.040792457315298326 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_num_examples: 578.88 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_e_neg_e_loss: 0.040792457315298326 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Average concat_pos_e_neg_e_num_examples: 578.88 at global step: 850
+INFO - 11/14/20 07:05:42 - 11:42:07 - Using m-e edges for training
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_loss: 0.05416767432048208 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_num_examples: 545.28 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_e_neg_e_loss: 0.05416767432048208 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Average concat_pos_e_neg_e_num_examples: 545.28 at global step: 875
+INFO - 11/14/20 07:26:19 - 12:02:44 - Using m-e edges for training
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_loss: 0.04288300603657481 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_num_examples: 571.2 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_e_neg_e_loss: 0.04288300603657481 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Average concat_pos_e_neg_e_num_examples: 571.2 at global step: 900
+INFO - 11/14/20 07:48:06 - 12:24:31 - Using m-e edges for training
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_loss: 0.05754096455622373 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_num_examples: 527.52 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_e_neg_e_loss: 0.05754096455622373 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Average concat_pos_e_neg_e_num_examples: 527.52 at global step: 925
+INFO - 11/14/20 08:07:59 - 12:44:24 - Using m-e edges for training
+INFO - 11/14/20 08:29:33 - 13:05:58 - Average concat_loss: 0.032323525278842545 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_num_examples: 567.52 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_e_neg_e_loss: 0.032323525278842545 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Average concat_pos_e_neg_e_num_examples: 567.52 at global step: 950
+INFO - 11/14/20 08:29:33 - 13:05:59 - Using m-e edges for training
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_loss: 0.051143829142407074 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_num_examples: 527.04 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_e_neg_e_loss: 0.051143829142407074 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Average concat_pos_e_neg_e_num_examples: 527.04 at global step: 975
+INFO - 11/14/20 08:49:56 - 13:26:21 - Using m-e edges for training
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_loss: 0.04407227970758604 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_num_examples: 522.72 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_e_neg_e_loss: 0.04407227970758604 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Average concat_pos_e_neg_e_num_examples: 522.72 at global step: 1000
+INFO - 11/14/20 09:09:57 - 13:46:22 - Using m-e edges for training
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_loss: 0.07081148504248314 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_num_examples: 556.8 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_e_neg_e_loss: 0.07081148504248314 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Average concat_pos_e_neg_e_num_examples: 556.8 at global step: 1025
+INFO - 11/14/20 09:31:09 - 14:07:34 - Using m-e edges for training
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_loss: 0.04303012774533367 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_num_examples: 491.52 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_e_neg_e_loss: 0.04303012774533367 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Average concat_pos_e_neg_e_num_examples: 491.52 at global step: 1050
+INFO - 11/14/20 09:49:42 - 14:26:07 - Using m-e edges for training
+INFO - 11/14/20 10:09:11 - 14:45:35 - Average concat_loss: 0.04083571636084031 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_num_examples: 513.12 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_e_neg_e_loss: 0.04083571636084031 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Average concat_pos_e_neg_e_num_examples: 513.12 at global step: 1075
+INFO - 11/14/20 10:09:11 - 14:45:37 - Using m-e edges for training
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_loss: 0.04544391882126966 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_num_examples: 522.72 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_e_neg_e_loss: 0.04544391882126966 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Average concat_pos_e_neg_e_num_examples: 522.72 at global step: 1100
+INFO - 11/14/20 10:29:04 - 15:05:29 - Using m-e edges for training
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_loss: 0.03662729825780957 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_num_examples: 547.2 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_e_neg_e_loss: 0.03662729825780957 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Average concat_pos_e_neg_e_num_examples: 547.2 at global step: 1125
+INFO - 11/14/20 10:50:10 - 15:26:35 - Using m-e edges for training
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_loss: 0.058262327203741845 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_num_examples: 513.12 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_e_neg_e_loss: 0.058262327203741845 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Average concat_pos_e_neg_e_num_examples: 513.12 at global step: 1150
+INFO - 11/14/20 11:09:37 - 15:46:02 - Using m-e edges for training
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_loss: 0.04411704693339408 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_num_examples: 554.4 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_m_neg_m_loss: 0.0 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_m_neg_e_loss: 0.0 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_e_neg_m_loss: 0.0 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_e_neg_e_loss: 0.04411704693339408 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_m_neg_m_num_examples: 0.0 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_m_neg_e_num_examples: 0.0 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_e_neg_m_num_examples: 0.0 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Average concat_pos_e_neg_e_num_examples: 554.4 at global step: 1175
+INFO - 11/14/20 11:30:58 - 16:07:23 - Using m-e edges for training
+INFO - 11/14/20 11:46:01 - 16:22:26 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-1194/affinity_model_model/m_e_model/config.json
+INFO - 11/14/20 11:46:13 - 16:22:38 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-1194/affinity_model_model/m_e_model/pytorch_model.bin
+INFO - 11/14/20 11:46:13 - 16:22:38 - Configuration saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-1194/affinity_model_model/m_m_model/config.json
+INFO - 11/14/20 11:46:23 - 16:22:48 - Model weights saved in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-e/checkpoint-1194/affinity_model_model/m_m_model/pytorch_model.bin
+INFO - 11/14/20 11:46:23 - 16:22:49 - ********** [END] epoch: 2 **********
+INFO - 11/14/20 11:46:23 - 16:22:49 - Training complete
