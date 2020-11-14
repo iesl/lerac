@@ -31,48 +31,42 @@ def eval_wdoc(args,
               save_fname=None):
     assert save_fname != None
 
-    ### >>> FOR DEBUGGING: REMOVE LATER
-    saved_graphs_fname = os.path.join(
-        os.path.dirname(save_fname), 'raw_graphs.pkl'
-    )
-    if not os.path.exists(saved_graphs_fname):
-        logger.info('Building within doc sparse graphs...')
-        doc_level_graphs = []
-        per_doc_coref_clusters = []
-        for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
-            per_doc_coref_clusters.append(
-                    [[x for x in v if x != k] for k, v in doc_clusters.items()]
-            )
-            doc_mentions = np.asarray([x for k, v in doc_clusters.items()
-                                            for x in v if x != k])
-            doc_mentions = np.sort(doc_mentions)
-            doc_level_graphs.append(
-                build_sparse_affinity_graph(
-                    args,
-                    doc_mentions,
-                    example_dir,
-                    metadata,
-                    None,
-                    sub_trainer,
-                    build_coref_graph=True,
-                    build_linking_graph=True
+    logger.info('Building within doc sparse graphs...')
+    doc_level_graphs = []
+    per_doc_coref_clusters = []
+    for doc_clusters in tqdm(metadata.wdoc_clusters.values(), disable=(get_rank() != 0)):
+        doc_mentions = np.asarray(
+            list(
+                set(
+                    [x for k, v in doc_clusters.items()
+                            for x in v if x != k]
                 )
             )
+        )
+        doc_mentions = np.sort(doc_mentions)
+        doc_eidx2midx = defaultdict(list)
+        for midx in doc_mentions:
+            true_eidx = metadata.midx2eidx[midx]
+            if isinstance(true_eidx, list):
+                doc_eidx2midx[true_eidx[0]].append(midx)
+            else:
+                doc_eidx2midx[true_eidx].append(midx)
+        per_doc_coref_clusters.append(list(doc_eidx2midx.values()))
 
-        logger.info('Done.')
+        doc_level_graphs.append(
+            build_sparse_affinity_graph(
+                args,
+                doc_mentions,
+                example_dir,
+                metadata,
+                None,
+                sub_trainer,
+                build_coref_graph=True,
+                build_linking_graph=True
+            )
+        )
 
-        with open(saved_graphs_fname, 'wb') as f:
-            pickle.dump(doc_level_graphs, f)
-    else:
-        with open(saved_graphs_fname, 'rb') as f:
-            doc_level_graphs = pickle.load(f)
-        
-    if get_rank() == 0:
-        embed()
-    synchronize()
-    exit()
-
-    ### <<< FOR DEBUGGING: REMOVE LATER
+    logger.info('Done.')
 
     # don't need other processes at this point
     if get_rank() != 0:
@@ -196,8 +190,12 @@ def compute_linking_metrics(metadata, linking_graphs):
         if len(cands) == 0:
             no_candidates.append(midx)
             continue
-        if metadata.midx2eidx[midx] in cands:
-            recall_hits += 1
+        if isinstance(metadata.midx2eidx[midx], list): # BC5CDR
+            if any([x in cands for x in metadata.midx2eidx[midx]]):
+                recall_hits += 1
+        else:
+            if metadata.midx2eidx[midx] in cands:
+                recall_hits += 1
 
     midxs = np.asarray(midxs)
 
@@ -218,10 +216,16 @@ def compute_linking_metrics(metadata, linking_graphs):
     linking_hits, linking_total = 0, 0
     pred_midx2eidx = {m : e for m, e in zip(midxs, pred_eidxs)}
     for midx, true_eidx in metadata.midx2eidx.items():
-        if true_eidx == pred_midx2eidx.get(midx, -1):
-            linking_hits += 1
-        elif true_eidx in metadata.midx2cand[midx]:
-            missed_vanilla_midxs.append(midx)
+        if isinstance(true_eidx, list): # BC5CDR
+            if any([x == pred_midx2eidx.get(midx, -1) for x in true_eidx]):
+                linking_hits += 1
+            elif any([x in metadata.midx2cand[midx] for x in true_eidx]):
+                missed_vanilla_midxs.append(midx)
+        else:
+            if true_eidx == pred_midx2eidx.get(midx, -1):
+                linking_hits += 1
+            elif true_eidx in metadata.midx2cand[midx]:
+                missed_vanilla_midxs.append(midx)
         linking_total += 1
 
     results_dict = {
@@ -247,8 +251,12 @@ def compute_joint_metrics(metadata, joint_graphs):
     )
     cc_recall_hits, cc_recall_total = 0, 0
     for midx, true_eidx in metadata.midx2eidx.items():
-        if cc_labels[midx] == cc_labels[true_eidx]:
-            cc_recall_hits += 1
+        if isinstance(true_eidx, list): # BC5CDR
+            if any([cc_labels[x] == cc_labels[midx] for x in true_eidx]):
+                cc_recall_hits += 1
+        else:
+            if cc_labels[midx] == cc_labels[true_eidx]:
+                cc_recall_hits += 1
         cc_recall_total += 1
     cc_recall = cc_recall_hits / cc_recall_total
 
@@ -319,7 +327,7 @@ def compute_joint_metrics(metadata, joint_graphs):
 
     joint_hits, joint_total = 0, 0
     for midx, true_eidx in metadata.midx2eidx.items():
-        if pred_midx2eidx.get(midx, -1) == true_eidx:
+        if any([x == pred_midx2eidx.get(midx, -1) for x in true_eidx]):
             joint_hits += 1
         joint_total += 1
 

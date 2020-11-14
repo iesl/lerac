@@ -17,7 +17,7 @@ python -m torch.distributed.launch \
         --model_type 'bert' \
         --model_name_or_path 'models/biobert_v1.1_pubmed/' \
         --task_name 'cluster_linking' \
-        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_0_m-m/' \
+        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1_m-m/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_train \
         --max_seq_length '128' \
