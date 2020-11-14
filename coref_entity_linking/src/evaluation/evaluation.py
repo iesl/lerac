@@ -327,8 +327,12 @@ def compute_joint_metrics(metadata, joint_graphs):
 
     joint_hits, joint_total = 0, 0
     for midx, true_eidx in metadata.midx2eidx.items():
-        if any([x == pred_midx2eidx.get(midx, -1) for x in true_eidx]):
-            joint_hits += 1
+        if isinstance(true_eidx, list): # BC5CDR
+            if any([x == pred_midx2eidx.get(midx, -1) for x in true_eidx]):
+                joint_hits += 1
+        else:
+            if true_eidx == pred_midx2eidx.get(midx, -1):
+                joint_hits += 1
         joint_total += 1
 
     return {'joint_accuracy' : joint_hits / joint_total,

@@ -171,7 +171,23 @@ class ClusterLinkingTrainer(Trainer):
                 args, self.val_dataset)
 
     def create_test_dataloader(self):
-        pass
+        args = self.args
+
+        # load and cache examples and get the metadata for the dataset
+        self.load_and_cache_examples(split='test', evaluate=True)
+
+        if args.available_entities in ['candidates_only', 'knn_candidates']:
+            examples = flatten([[k] + v
+                    for k, v in self.test_metadata.midx2cand.items()])
+        elif args.available_entities == 'open_domain':
+            examples = list(self.test_metadata.idx2uid.keys())
+        else:
+            raise ValueError('Invalid available_entities')
+        examples = unique(examples)
+        self.test_dataset = InferenceEmbeddingDataset(
+                args, examples, args.test_cache_dir)
+        self.test_dataloader = InferenceEmbeddingDataLoader(
+                args, self.test_dataset)
 
     def create_knn_index(self, split=None):
         assert split == 'train' or split == 'val' or split == 'test'

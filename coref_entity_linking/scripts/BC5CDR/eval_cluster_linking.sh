@@ -10,11 +10,11 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir '/local/coref_entity_linking/data/BC5CDR/' \
         --model_type 'bert' \
-        --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1/checkpoint-398/' \
+        --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1/checkpoint-1194/' \
         --task_name 'cluster_linking' \
-        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1/checkpoint-398/' \
+        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1/checkpoint-1194/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
-        --do_val \
+        --do_test \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --embed_pooling_strategy 'pool_highlighted_outputs' \
@@ -25,4 +25,5 @@ python -m torch.distributed.launch \
         --per_gpu_infer_batch 256 \
         --logging_steps 25 \
         --train_domains 'train' 'entity_documents' \
-        --val_domains 'val' 'entity_documents'
+        --val_domains 'val' 'entity_documents' \
+        --test_domains 'test' 'entity_documents'

@@ -24,13 +24,13 @@ val_domains=( "val" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T05
 test_domains=( "test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
 
 python -m torch.distributed.launch \
-    --nproc_per_node 4 \
+    --nproc_per_node 8 \
     src/main.py \
         --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' \
         --model_type 'bert' \
-        --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-7442/ \
+        --trained_model_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_final/checkpoint-3721/ \
         --task_name 'cluster_linking' \
-        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/prev_m-e__exp_mst_retrain_m-m/checkpoint-7442/ \
+        --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_final/checkpoint-3721/ \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_val \
         --max_seq_length 128 \
