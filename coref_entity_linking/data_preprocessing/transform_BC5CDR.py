@@ -20,8 +20,8 @@ PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
 #PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
 MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
 ENTITY_FILES = [
-    REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv',
-    REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_diseases-2015-06-04.tsv'
+    ('Chemical', REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv'),
+    ('Disease', REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_diseases-2015-06-04.tsv')
 ]
 
 OUTPUT_DIR = '/mnt/nfs/scratch1/rangell/lerac/data/{}'.format(DATASET)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # process entity files
     entity_dict = {}
-    for raw_entity_file in ENTITY_FILES:
+    for entity_type, raw_entity_file in ENTITY_FILES:
         with open(raw_entity_file, 'r') as f:
             for line in f:
                 if line[0] == '#':
@@ -52,7 +52,8 @@ if __name__ == '__main__':
                     'title': name,
                     'text': '{} ( {} )'.format(
                             name, ' ; '.join(synonyms)
-                        )
+                        ),
+                    'type': entity_type
                 }
                 entity_dict[cuid] = entity_obj
 
