@@ -32,7 +32,7 @@ python -m torch.distributed.launch \
         --task_name 'cluster_linking' \
         --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_final/checkpoint-7442/ \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
-        --do_val \
+        --do_test \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --embed_pooling_strategy 'pool_highlighted_outputs' \

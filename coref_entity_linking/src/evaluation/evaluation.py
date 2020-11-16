@@ -93,8 +93,14 @@ def eval_wdoc(args,
 
     logger.info('Computing joint metrics...')
     slim_coref_graph = _get_global_maximum_spanning_tree(coref_graphs)
-    joint_metrics = compute_joint_metrics(metadata,
-                                          [slim_coref_graph, slim_linking_graph])
+
+    joint_whole_graph = _merge_sparse_graphs(
+        [slim_coref_graph, slim_linking_graph]
+    )
+
+    joint_metrics = compute_joint_metrics(
+        metadata, [deepcopy(joint_whole_graph)]
+    )
     logger.info('Done.')
 
     metrics = {
@@ -113,6 +119,7 @@ def eval_wdoc(args,
     save_data.update(linking_metrics)
     save_data.update(joint_metrics)
     save_data.update({'metadata': metadata})
+    save_data.update({'joint_whole_graph': joint_whole_graph})
 
     with open(save_fname, 'wb') as f:
         pickle.dump(save_data, f)

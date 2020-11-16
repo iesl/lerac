@@ -13,11 +13,11 @@ from IPython import embed
 
 DATASET = 'BC5CDR'
 REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
-PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
 #PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_sample_PMIDs.txt'
-#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
-PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
-#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
+PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
+#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
 MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
 ENTITY_FILES = [
     ('Chemical', REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv'),
@@ -35,27 +35,6 @@ if __name__ == '__main__':
             'models/biobert_v1.1_pubmed/vocab.txt',
         do_lower_case=False
     )
-
-    # process entity files
-    entity_dict = {}
-    for entity_type, raw_entity_file in ENTITY_FILES:
-        with open(raw_entity_file, 'r') as f:
-            for line in f:
-                if line[0] == '#':
-                    continue
-                line_cols = line.strip().split('\t')
-                name = line_cols[0]
-                cuid = line_cols[1].replace('MESH:', '').replace('OMIM:', '')
-                synonyms = line_cols[-1].split('|')
-                entity_obj = {
-                    'document_id': cuid,
-                    'title': name,
-                    'text': '{} ( {} )'.format(
-                            name, ' ; '.join(synonyms)
-                        ),
-                    'type': entity_type
-                }
-                entity_dict[cuid] = entity_obj
 
     # get all pmids
     with open(PMIDS_FILE, 'r') as f:
@@ -92,18 +71,73 @@ if __name__ == '__main__':
         tokenized_docs[pmid] = tokenized_text
 
     # get all of the mentions and their tfidf candidates in raw form
-    print('Reading mentions and tfidf candidates...')
+    print('Reading mentions, tfidf candidates, and building entity set...')
     mention_cands = defaultdict(list)
+    cuid2names = defaultdict(list)
+    cuid2type = {}
     with open(MATCHES_FILE, 'r') as f:
         reader = csv.reader(f, delimiter="\t", quotechar='"')
         keys = next(reader)
         for row in tqdm(reader):
+            cuid2names[row[8]].append(row[11])
+            cuid2type[row[8]] = row[7]
             if row[0] not in pmids:
                 continue
             mention_key = (row[0], row[1], row[2])
             mention_cand_val = {k : v for k, v in zip(keys, row)}
             mention_cands[mention_key].append(mention_cand_val)
     print('Done.')
+
+    # build entity dict
+    entity_dict = {}
+    for cuid, names in cuid2names.items():
+        name_counts = defaultdict(int)
+        for name in names:
+            name_counts[name] += 1
+        names_w_counts = sorted(
+            name_counts.items(), reverse=True, key=lambda x: x[1]
+        )
+        uniq_names, _ = zip(*names_w_counts)
+        
+        if len(uniq_names) > 1:
+            entity_obj = {
+                'document_id': cuid,
+                'title': uniq_names[0],
+                'text': '{} ( {} )'.format(
+                        uniq_names[0], ' ; '.join(uniq_names[1:])
+                    ),
+                'type': cuid2type[cuid]
+            }
+        else:
+            entity_obj = {
+                'document_id': cuid,
+                'title': uniq_names[0],
+                'text': uniq_names[0],
+                'type': cuid2type[cuid]
+            }
+        entity_dict[cuid] = entity_obj
+
+    # process entity files
+    for entity_type, raw_entity_file in ENTITY_FILES:
+        with open(raw_entity_file, 'r') as f:
+            for line in f:
+                if line[0] == '#':
+                    continue
+                line_cols = line.strip().split('\t')
+                name = line_cols[0]
+                cuid = line_cols[1].replace('MESH:', '').replace('OMIM:', '')
+                if cuid in entity_dict.keys():
+                    continue
+                synonyms = line_cols[-1].split('|')
+                entity_obj = {
+                    'document_id': cuid,
+                    'title': name,
+                    'text': '{} ( {} )'.format(
+                            name, ' ; '.join(synonyms)
+                        ),
+                    'type': entity_type
+                }
+                entity_dict[cuid] = entity_obj
 
     # organize mentions by pmid
     mentions = defaultdict(list)
@@ -140,7 +174,9 @@ if __name__ == '__main__':
                 return i
         return -1
 
+
     # process mentions
+    restricted_mention_type = 'Chemical'
     mention_objs = []
     tfidf_candidate_objs = []
     for pmid, _mentions in tqdm(mentions.items(), desc='Process mentions'):
@@ -184,13 +220,17 @@ if __name__ == '__main__':
                     )
             }
 
+            if mention_obj['category'] != restricted_mention_type:
+                continue
+
             # add the mention object to the list
             mention_objs.append(mention_obj)
 
             # get candidates
             tfidf_cand_cuids = []
             for cand in mention_cands[(pmid, start_char, end_char)]:
-                tfidf_cand_cuids.append(cand['match_cuid'])
+                if cand['match_tid'] == restricted_mention_type:
+                    tfidf_cand_cuids.append(cand['match_cuid'])
 
             # create tfidf candidates object and add to list
             tfidf_cands_obj = {
