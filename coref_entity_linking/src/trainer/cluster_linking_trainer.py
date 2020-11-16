@@ -348,11 +348,7 @@ class ClusterLinkingTrainer(Trainer):
         for c_idxs in clusters:
             if args.clustering_domain == 'within_doc':
                 # get mention idxs within document
-                try:
-                    doc_midxs = self.doc2midxs[self.midx2doc[c_idxs[1]]]
-                except:
-                    embed()
-                    exit()
+                doc_midxs = self.doc2midxs[self.midx2doc[c_idxs[1]]]
 
                 # produce available negative mention idxs
                 neg_midxs = [m for m in doc_midxs if m not in c_idxs]
