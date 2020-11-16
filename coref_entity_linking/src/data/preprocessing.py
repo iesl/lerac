@@ -173,11 +173,11 @@ class ZeshelPreprocessor(object):
         max_seq_length -= 2
 
         # global index
-        global_idx = 0
+        global_idx = 1 # for hacky sparse matrix reason
 
         # metadata
         num_mentions = 0
-        num_entities = 0
+        num_entities = 1 # for same hacky reason as global_idx
         uid2idx = defaultdict(lambda : None)
         idx2uid = defaultdict(lambda : None)
         midx2cand = defaultdict(list)
