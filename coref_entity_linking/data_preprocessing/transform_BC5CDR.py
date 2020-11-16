@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
 
     # process mentions
-    restricted_mention_type = 'Chemical'
+    restricted_mention_type = 'Disease'
     mention_objs = []
     tfidf_candidate_objs = []
     for pmid, _mentions in tqdm(mentions.items(), desc='Process mentions'):
