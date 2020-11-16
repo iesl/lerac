@@ -76,8 +76,13 @@ def eval_wdoc(args,
     # build everything needed to compute metrics and compute them!
     coref_graphs, linking_graphs = [], []
     for coref_graph, linking_graph in doc_level_graphs:
-        coref_graphs.append(coref_graph)
-        linking_graphs.append(linking_graph)
+        if coref_graph is not None:
+            coref_graphs.append(coref_graph)
+        if linking_graph is not None:
+            linking_graphs.append(linking_graph)
+
+    # get whole joint graph for post-processing stuff
+    joint_whole_graph = _merge_sparse_graphs(coref_graphs + linking_graphs)
 
     logger.info('Computing coref metrics...')
     coref_metrics = compute_coref_metrics(
@@ -94,12 +99,9 @@ def eval_wdoc(args,
     logger.info('Computing joint metrics...')
     slim_coref_graph = _get_global_maximum_spanning_tree(coref_graphs)
 
-    joint_whole_graph = _merge_sparse_graphs(
-        [slim_coref_graph, slim_linking_graph]
-    )
 
     joint_metrics = compute_joint_metrics(
-        metadata, [deepcopy(joint_whole_graph)]
+        metadata, [slim_coref_graph, slim_linking_graph]
     )
     logger.info('Done.')
 
@@ -393,19 +395,20 @@ def build_sparse_affinity_graph(args,
 
         # broadcast edges to all processes to compute affinities
         coref_graph_edges = broadcast(coref_graph_edges, src=0)
-        affinities = sub_trainer.get_edge_affinities(
-                coref_graph_edges, example_dir, knn_index
-        )
 
-        # affinities are gathered to only rank 0 process
-        if get_rank() == 0:
-            # build the graph
-            coref_graph_edges = np.asarray(coref_graph_edges).T
-            _sparse_num = metadata.num_mentions + metadata.num_entities
-            coref_graph = coo_matrix(
-                        (affinities, coref_graph_edges),
-                        shape=(_sparse_num, _sparse_num)
+        if len(coref_graph_edges) > 0:
+            affinities = sub_trainer.get_edge_affinities(
+                    coref_graph_edges, example_dir, knn_index
             )
+            # affinities are gathered to only rank 0 process
+            if get_rank() == 0:
+                # build the graph
+                coref_graph_edges = np.asarray(coref_graph_edges).T
+                _sparse_num = metadata.num_mentions + metadata.num_entities
+                coref_graph = coo_matrix(
+                            (affinities, coref_graph_edges),
+                            shape=(_sparse_num, _sparse_num)
+                )
 
     if build_linking_graph:
         # list of edges for sparse graph we will build
