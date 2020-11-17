@@ -8,11 +8,11 @@ set -eux
 python -m torch.distributed.launch \
     --nproc_per_node 4 \
     src/main.py \
-        --data_dir '/local/coref_entity_linking/data/BC5CDR/' \
+        --data_dir '/local/coref_entity_linking/data/BC5CDR-d/' \
         --model_type 'bert' \
-        --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1/checkpoint-1194/' \
+        --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR-d/cluster_linking/exp_0/checkpoint-1120/' \
         --task_name 'cluster_linking' \
-        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_1/checkpoint-1194/' \
+        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR-d/cluster_linking/exp_0/checkpoint-1120/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_test \
         --max_seq_length 128 \
