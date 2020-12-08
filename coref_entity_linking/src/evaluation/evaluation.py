@@ -264,7 +264,7 @@ def compute_joint_metrics(metadata, joint_graphs):
             if any([cc_labels[x] == cc_labels[midx] for x in true_eidx]):
                 cc_recall_hits += 1
         else:
-            if cc_labels[midx] == cc_labels[true_eidx]:
+            if true_eidx and cc_labels[midx] == cc_labels[true_eidx]:
                 cc_recall_hits += 1
         cc_recall_total += 1
     cc_recall = cc_recall_hits / cc_recall_total
@@ -380,7 +380,14 @@ def build_sparse_affinity_graph(args,
                     midx2doc[midx] = doc_id
             mention_knn = []
             for midx in midxs:
-                mention_knn.append([x for x in doc2midx[midx2doc[midx]] if x != midx and x >= args.num_entities])
+                mention_knn.append(
+                    [
+                        x for x in doc2midx[midx2doc[midx]] 
+                            if (x is not None
+                                and x != midx
+                                and x >= args.num_entities)
+                    ]
+                )
 
     if build_coref_graph:
         # list of edges for sparse graph we will build
@@ -421,7 +428,7 @@ def build_sparse_affinity_graph(args,
                     try:
                         if len(candidates) > 0:
                             linking_graph_edges.extend(
-                                [tuple(sorted((midx, eidx))) for eidx in candidates]
+                                [tuple(sorted((midx, eidx))) for eidx in candidates if eidx is not None]
                             )
                     except:
                         embed()

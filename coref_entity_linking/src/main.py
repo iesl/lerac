@@ -99,6 +99,7 @@ def get_args():
     parser.add_argument("--do_val", action='store_true',
                         help="Whether to run eval on the train set.")
     parser.add_argument("--do_test", action='store_true', help='Whether to run test on the test set')
+    parser.add_argument("--do_taggerOne_test", action='store_true', help='Whether to run test on the test set')
     parser.add_argument("--evaluate_during_training", action='store_true',
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
@@ -111,6 +112,8 @@ def get_args():
     parser.add_argument("--val_domains", default=None, nargs='+',
                         help="list of val domains of documents")
     parser.add_argument("--test_domains", default=None, nargs='+',
+                        help="list of test domains of documents")
+    parser.add_argument("--taggerOne_test_domains", default=None, nargs='+',
                         help="list of test domains of documents")
     parser.add_argument("--train_mention_entity_scores", default=None,
                         help="path to serialized mention-entity scores file")
@@ -270,6 +273,8 @@ def main():
         logger_filename = "val.log"
     elif args.do_test:
         logger_filename = "test.log"
+    elif args.do_taggerOne_test:
+        logger_filename = "taggerOne_test.log"
 
     # initialize experiment, including setting up logger
     initialize_exp(args, logger_filename)
@@ -298,6 +303,8 @@ def main():
             trainer.evaluate(split='val')
         if args.do_test:
             trainer.evaluate(split='test')
+        if args.do_taggerOne_test:
+            trainer.evaluate(split='taggerOne_test')
 
 
 if __name__ == "__main__":

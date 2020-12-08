@@ -22,6 +22,7 @@ DATASET="mm_st21pv_long_entities"
 train_domains=( "train" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
 val_domains=( "val" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
 test_domains=( "test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
+taggerOne_test_domains=( "taggerOne_test" "T005" "T007" "T017" "T022" "T031" "T033" "T037" "T038" "T058" "T062" "T074" "T082" "T091" "T092" "T097" "T098" "T103" "T168" "T170" "T201" "T204" )
 
 python -m torch.distributed.launch \
     --nproc_per_node 8 \
@@ -32,7 +33,7 @@ python -m torch.distributed.launch \
         --task_name 'cluster_linking' \
         --output_dir ${BASE_DIR}/experiments/${DATASET}/cluster_linking/exp_final/checkpoint-7442/ \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
-        --do_test \
+        --do_taggerOne_test \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --embed_pooling_strategy 'pool_highlighted_outputs' \
@@ -45,3 +46,4 @@ python -m torch.distributed.launch \
         --train_domains ${train_domains[@]} \
         --val_domains ${val_domains[@]} \
         --test_domains ${test_domains[@]} \
+        --taggerOne_test_domains ${taggerOne_test_domains[@]}

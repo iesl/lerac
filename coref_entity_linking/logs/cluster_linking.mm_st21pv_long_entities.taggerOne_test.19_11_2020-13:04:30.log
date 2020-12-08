@@ -1,0 +1,172 @@
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 7, device: cuda:7, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 2, device: cuda:2, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 6, device: cuda:6, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 1, device: cuda:1, n_gpu: 1, distributed training: True, 16-bits training: False
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 3, device: cuda:3, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/19/20 13:04:30 - 0:00:00 - ============ Initialized logger ============
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 5, device: cuda:5, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/19/20 13:04:30 - 0:00:00 - adam_epsilon: 1e-08
+                                     alpha: None
+                                     available_entities: candidates_only
+                                     cache_dir: 
+                                     clustering_domain: within_doc
+                                     command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' --model_type 'bert' --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_taggerOne_test --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --k '16' --per_gpu_infer_batch '256' --logging_steps '25' --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --val_domains 'val' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --test_domains 'test' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --taggerOne_test_domains 'taggerOne_test' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204'
+                                     concat_pooling_strategy: pool_highlighted_outputs
+                                     config_name: 
+                                     data_dir: /local/coref_entity_linking/data/mm_st21pv_long_entities/
+                                     device: cuda:0
+                                     disable_logging: False
+                                     do_lower_case: False
+                                     do_taggerOne_test: True
+                                     do_test: False
+                                     do_train: False
+                                     do_train_eval: False
+                                     do_val: False
+                                     dump_coref_candidate_sets: False
+                                     embed_pooling_strategy: pool_highlighted_outputs
+                                     eval_all_checkpoints: False
+                                     eval_coref_threshold: None
+                                     evaluate_during_training: False
+                                     fp16: False
+                                     fp16_opt_level: O1
+                                     git_hash: 1788a08fb5493edaef3a7ad1316d707b1fe6cf4a
+                                     gradient_accumulation_steps: 1
+                                     k: 16
+                                     knn_refresh_steps: 100
+                                     learning_rate: 5e-05
+                                     local_rank: 0
+                                     log_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/
+                                     logging_steps: 25
+                                     margin: None
+                                     max_grad_norm: 1.0
+                                     max_seq_length: 128
+                                     max_steps: -1
+                                     mention_negatives: candidates_only
+                                     model_name_or_path: None
+                                     model_type: bert
+                                     n_gpu: 1
+                                     no_cuda: False
+                                     num_candidates: 64
+                                     num_candidates_per_example: 16
+                                     num_clusters_per_macro_batch: 8
+                                     num_context_codes: 4
+                                     num_dataloader_workers: 0
+                                     num_train_epochs: 3
+                                     num_train_negs: 32
+                                     output_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/
+                                     overwrite_cache: False
+                                     overwrite_output_dir: False
+                                     pair_gen_method: all_pairs
+                                     per_gpu_infer_batch_size: 256
+                                     per_gpu_train_batch_size: 8
+                                     sample_size: None
+                                     save_steps: 50
+                                     seed: 42
+                                     seq_embed_dim: 128
+                                     server_ip: 
+                                     server_port: 
+                                     taggerOne_test_domains: ['taggerOne_test', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204']
+                                     task_name: cluster_linking
+                                     test_domains: ['test', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204']
+                                     test_mention_entity_scores: None
+                                     tiny_experiment: False
+                                     tokenizer_name: 
+                                     train_domains: ['train', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204']
+                                     train_mention_entity_scores: None
+                                     trained_model_dir: /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/
+                                     training_edges_considered: all
+                                     training_method: triplet_max_margin
+                                     val_domains: ['val', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204']
+                                     val_mention_entity_scores: None
+                                     warmup_steps: 0
+                                     weight_decay: 0.0
+                                     world_size: 8
+INFO - 11/19/20 13:04:30 - 0:00:00 - The experiment will be stored in /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/
+                                     
+INFO - 11/19/20 13:04:30 - 0:00:00 - Running command: python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' --model_type 'bert' --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_taggerOne_test --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --k '16' --per_gpu_infer_batch '256' --logging_steps '25' --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --val_domains 'val' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --test_domains 'test' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --taggerOne_test_domains 'taggerOne_test' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204'
+                                     
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 0, device: cuda:0, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/19/20 13:04:30 - 0:00:00 - Creating models.
+INFO - 11/19/20 13:04:30 - 0:00:00 - Model name '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model' not found in model shortcut name list (bert-base-uncased, bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased, bert-base-multilingual-cased, bert-base-chinese, bert-base-german-cased, bert-large-uncased-whole-word-masking, bert-large-cased-whole-word-masking, bert-large-uncased-whole-word-masking-finetuned-squad, bert-large-cased-whole-word-masking-finetuned-squad, bert-base-cased-finetuned-mrpc, bert-base-german-dbmdz-cased, bert-base-german-dbmdz-uncased, TurkuNLP/bert-base-finnish-cased-v1, TurkuNLP/bert-base-finnish-uncased-v1, wietsedv/bert-base-dutch-cased). Assuming '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model' is a path, a model identifier, or url to a directory containing tokenizer files.
+INFO - 11/19/20 13:04:30 - 0:00:00 - Didn't find file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/added_tokens.json. We won't load it.
+INFO - 11/19/20 13:04:30 - 0:00:00 - loading file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/vocab.txt
+INFO - 11/19/20 13:04:30 - 0:00:00 - loading file None
+INFO - 11/19/20 13:04:30 - 0:00:00 - loading file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/special_tokens_map.json
+INFO - 11/19/20 13:04:30 - 0:00:00 - loading file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/tokenizer_config.json
+WARNING - 11/19/20 13:04:30 - 0:00:00 - Process rank: 4, device: cuda:4, n_gpu: 1, distributed training: True, 16-bits training: False
+INFO - 11/19/20 13:04:30 - 0:00:00 - loading configuration file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/m_e_model/config.json
+INFO - 11/19/20 13:04:30 - 0:00:00 - Model config BertConfig {
+                                       "architectures": [
+                                         "BertSequenceScoringModel"
+                                       ],
+                                       "attention_probs_dropout_prob": 0.1,
+                                       "cls_id": 101,
+                                       "concat_pooling_strategy": "cls",
+                                       "end_entity_id": 4,
+                                       "end_mention_id": 2,
+                                       "finetuning_task": "cluster_linking",
+                                       "hidden_act": "gelu",
+                                       "hidden_dropout_prob": 0.1,
+                                       "hidden_size": 768,
+                                       "initializer_range": 0.02,
+                                       "intermediate_size": 3072,
+                                       "layer_norm_eps": 1e-12,
+                                       "max_position_embeddings": 512,
+                                       "model_type": "bert",
+                                       "num_attention_heads": 12,
+                                       "num_hidden_layers": 12,
+                                       "pad_token_id": 0,
+                                       "sep_id": 102,
+                                       "start_entity_id": 3,
+                                       "start_mention_id": 1,
+                                       "type_vocab_size": 2,
+                                       "vocab_size": 28996
+                                     }
+                                     
+INFO - 11/19/20 13:04:30 - 0:00:00 - loading weights file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/m_e_model/pytorch_model.bin
+INFO - 11/19/20 13:04:34 - 0:00:04 - loading configuration file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/m_m_model/config.json
+INFO - 11/19/20 13:04:34 - 0:00:04 - Model config BertConfig {
+                                       "architectures": [
+                                         "BertSequenceScoringModel"
+                                       ],
+                                       "attention_probs_dropout_prob": 0.1,
+                                       "cls_id": 101,
+                                       "concat_pooling_strategy": "pool_highlighted_outputs",
+                                       "end_entity_id": 4,
+                                       "end_mention_id": 2,
+                                       "finetuning_task": "cluster_linking",
+                                       "hidden_act": "gelu",
+                                       "hidden_dropout_prob": 0.1,
+                                       "hidden_size": 768,
+                                       "initializer_range": 0.02,
+                                       "intermediate_size": 3072,
+                                       "layer_norm_eps": 1e-12,
+                                       "max_position_embeddings": 512,
+                                       "model_type": "bert",
+                                       "num_attention_heads": 12,
+                                       "num_hidden_layers": 12,
+                                       "pad_token_id": 0,
+                                       "sep_id": 102,
+                                       "start_entity_id": 3,
+                                       "start_mention_id": 1,
+                                       "type_vocab_size": 2,
+                                       "vocab_size": 28996
+                                     }
+                                     
+INFO - 11/19/20 13:04:34 - 0:00:04 - loading weights file /mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/affinity_model_model/m_m_model/pytorch_model.bin
+INFO - 11/19/20 13:04:38 - 0:00:08 - Loading cached metadata and dataset.
+INFO - 11/19/20 13:05:31 - 0:00:44 - Training/evaluation parameters Namespace(adam_epsilon=1e-08, alpha=None, available_entities='candidates_only', cache_dir='', clustering_domain='within_doc', command="python src/main.py --local_rank=0 --data_dir '/local/coref_entity_linking/data/mm_st21pv_long_entities/' --model_type 'bert' --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/' --task_name 'cluster_linking' --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/' --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' --do_taggerOne_test --max_seq_length '128' --seq_embed_dim '128' --embed_pooling_strategy 'pool_highlighted_outputs' --concat_pooling_strategy 'pool_highlighted_outputs' --clustering_domain 'within_doc' --available_entities 'candidates_only' --k '16' --per_gpu_infer_batch '256' --logging_steps '25' --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --val_domains 'val' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --test_domains 'test' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' --taggerOne_test_domains 'taggerOne_test' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204'", concat_pooling_strategy='pool_highlighted_outputs', config_name='', data_dir='/local/coref_entity_linking/data/mm_st21pv_long_entities/', device=device(type='cuda', index=0), disable_logging=False, do_lower_case=False, do_taggerOne_test=True, do_test=False, do_train=False, do_train_eval=False, do_val=False, dump_coref_candidate_sets=False, embed_pooling_strategy='pool_highlighted_outputs', eval_all_checkpoints=False, eval_coref_threshold=None, evaluate_during_training=False, fp16=False, fp16_opt_level='O1', git_hash='1788a08fb5493edaef3a7ad1316d707b1fe6cf4a', gradient_accumulation_steps=1, infer_batch_size=256, k=16, knn_refresh_steps=100, learning_rate=5e-05, local_rank=0, log_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/', logging_steps=25, margin=None, max_grad_norm=1.0, max_seq_length=128, max_steps=-1, mention_negatives='candidates_only', model_name_or_path=None, model_type='bert', n_gpu=1, no_cuda=False, num_candidates=64, num_candidates_per_example=16, num_clusters_per_macro_batch=8, num_context_codes=4, num_dataloader_workers=0, num_train_epochs=3, num_train_negs=32, output_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/', overwrite_cache=False, overwrite_output_dir=False, pair_gen_method='all_pairs', per_gpu_infer_batch_size=256, per_gpu_train_batch_size=8, sample_size=None, save_steps=50, seed=42, seq_embed_dim=128, server_ip='', server_port='', taggerOne_test_cache_dir='/local/coref_entity_linking/data/mm_st21pv_long_entities/cache/taggerOne_test', taggerOne_test_domains=['taggerOne_test', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204'], task_name='cluster_linking', test_domains=['test', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204'], test_mention_entity_scores=None, tiny_experiment=False, tokenizer=<transformers.tokenization_bert.BertTokenizer object at 0x2aab1e2aac50>, tokenizer_name='', train_batch_size=8, train_domains=['train', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204'], train_mention_entity_scores=None, trained_model_dir='/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking//experiments/mm_st21pv_long_entities/cluster_linking/exp_final/checkpoint-7442/', training_edges_considered='all', training_method='triplet_max_margin', val_domains=['val', 'T005', 'T007', 'T017', 'T022', 'T031', 'T033', 'T037', 'T038', 'T058', 'T062', 'T074', 'T082', 'T091', 'T092', 'T097', 'T098', 'T103', 'T168', 'T170', 'T201', 'T204'], val_mention_entity_scores=None, warmup_steps=0, weight_decay=0.0, world_size=8)
+INFO - 11/19/20 13:05:31 - 0:01:01 - Creating sub-trainers.
+INFO - 11/19/20 13:05:31 - 0:01:01 - Successfully created trainer object
+INFO - 11/19/20 13:05:31 - 0:01:01 - ********** [START] eval: taggerOne_test **********
+INFO - 11/19/20 13:05:31 - 0:01:01 - Building within doc sparse graphs...
+INFO - 11/19/20 16:09:49 - 3:05:16 - Done.
+INFO - 11/19/20 16:09:49 - 3:05:19 - Computing coref metrics...
+INFO - 11/19/20 16:10:21 - 3:05:43 - Generating candidate thresholds...
+INFO - 11/19/20 16:11:34 - 3:06:30 - Done.
+INFO - 11/19/20 16:11:34 - 3:07:04 - Choosing threshold...
+INFO - 11/19/20 16:31:38 - 3:26:58 - Done.
+INFO - 11/19/20 16:31:43 - 3:27:13 - Done.
+INFO - 11/19/20 16:31:43 - 3:27:13 - Computing linking metrics...
+INFO - 11/19/20 16:31:52 - 3:27:22 - Done.
+INFO - 11/19/20 16:31:52 - 3:27:22 - Computing joint metrics...

@@ -133,6 +133,8 @@ def initialize_exp(args, logger_filename='train.log'):
             prefix = "val"
         elif args.do_test:
             prefix = "test"
+        elif args.do_taggerOne_test:
+            prefix = "taggerOne_test"
         else:
             raise ValueError("No valid train or validation mode selected")
         args_file = prefix + "_args.pkl"

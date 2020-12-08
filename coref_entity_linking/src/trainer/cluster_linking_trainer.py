@@ -48,6 +48,8 @@ class ClusterLinkingTrainer(Trainer):
             args.num_entities = self.val_metadata.num_entities
         elif hasattr(self, 'test_metadata'):
             args.num_entities = self.test_metadata.num_entities
+        elif hasattr(self, 'taggerOne_test_metadata'):
+            args.num_entities = self.taggerOne_test_metadata.num_entities
         else:
             raise AttributeError('Must have a dataset metadata loaded and available')
 
@@ -188,6 +190,25 @@ class ClusterLinkingTrainer(Trainer):
                 args, examples, args.test_cache_dir)
         self.test_dataloader = InferenceEmbeddingDataLoader(
                 args, self.test_dataset)
+
+    def create_taggerOne_test_dataloader(self):
+        args = self.args
+
+        # load and cache examples and get the metadata for the dataset
+        self.load_and_cache_examples(split='taggerOne_test', evaluate=True)
+
+        if args.available_entities in ['candidates_only', 'knn_candidates']:
+            examples = flatten([[k] + v
+                    for k, v in self.taggerOne_test_metadata.midx2cand.items()])
+        elif args.available_entities == 'open_domain':
+            examples = list(self.taggerOne_test_metadata.idx2uid.keys())
+        else:
+            raise ValueError('Invalid available_entities')
+        examples = unique(examples)
+        self.taggerOne_test_dataset = InferenceEmbeddingDataset(
+                args, examples, args.taggerOne_test_cache_dir)
+        self.taggerOne_test_dataloader = InferenceEmbeddingDataLoader(
+                args, self.taggerOne_test_dataset)
 
     def create_knn_index(self, split=None):
         assert split == 'train' or split == 'val' or split == 'test'
@@ -578,7 +599,7 @@ class ClusterLinkingTrainer(Trainer):
         #exit()
 
     def evaluate(self, split='', suffix=''):
-        assert split in ['train', 'val', 'test']
+        assert split in ['train', 'val', 'test', 'taggerOne_test']
         args = self.args
 
         logger.info('********** [START] eval: {} **********'.format(split))
@@ -591,10 +612,14 @@ class ClusterLinkingTrainer(Trainer):
             metadata = self.val_metadata
             #knn_index = self.val_knn_index
             example_dir = args.val_cache_dir
-        else:
+        elif split == 'test':
             metadata = self.test_metadata
             #knn_index = self.test_knn_index
             example_dir = args.test_cache_dir
+        elif split == 'taggerOne_test':
+            metadata = self.taggerOne_test_metadata
+            #knn_index = self.test_knn_index
+            example_dir = args.taggerOne_test_cache_dir
 
         ## refresh the knn index
         #knn_index.refresh_index()

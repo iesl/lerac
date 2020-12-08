@@ -55,6 +55,7 @@ if __name__ == '__main__':
                         ),
                     'type': entity_type
                 }
+                entity_dict[cuid] = entity_obj
 
     # get all pmids
     with open(PMIDS_FILE, 'r') as f:

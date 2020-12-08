@@ -224,6 +224,13 @@ class ZeshelPreprocessor(object):
                 label_idx = uid2idx[label_uid]
             mention_type = mention['category']
 
+            # expand candidate set?
+            if split == 'taggerOne_test':
+                local_cands = candidates.get(uid, [])
+                if mention['taggerOne_pred_document_id'] not in local_cands:
+                    local_cands.append(mention['taggerOne_pred_document_id'])
+                    candidates[uid] = local_cands
+
             # ignore all BC5CDR training examples which have no gold label
             if split == 'train' and isinstance(label_idx, list) \
                     and label_idx == [None]:

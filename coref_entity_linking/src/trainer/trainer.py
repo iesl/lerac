@@ -101,6 +101,9 @@ class Trainer(ABC):
         if args.do_test:
             self.create_test_dataloader()
 
+        if args.do_taggerOne_test:
+            self.create_taggerOne_test_dataloader()
+
         for model_name in self.models.keys():
             self.models[model_name].to(args.device)
 
@@ -120,7 +123,7 @@ class Trainer(ABC):
         if args.local_rank not in [-1, 0]:
             dist.barrier()
 
-        assert split == 'train' or split == 'val' or split == 'test'
+        assert split == 'train' or split == 'val' or split == 'test' or split == 'taggerOne_test'
         assert evaluate == True or split == 'train'
 
         cache_dir = os.path.join(args.data_dir, 'cache', split)
@@ -133,9 +136,12 @@ class Trainer(ABC):
         elif split == 'val':
             domains = args.val_domains
             args.val_cache_dir = cache_dir
-        else:
+        elif split == 'test':
             domains = args.test_domains
             args.test_cache_dir = cache_dir
+        elif split == 'taggerOne_test':
+            domains = args.taggerOne_test_domains
+            args.taggerOne_test_cache_dir = cache_dir
 
         self.create_or_load_preprocessed_data(
                 split, domains, cache_dir)
@@ -198,8 +204,10 @@ class Trainer(ABC):
             self.train_metadata = _metadata
         elif split == 'val':
             self.val_metadata = _metadata
-        else:
+        elif split == 'test':
             self.test_metadata = _metadata
+        elif split == 'taggerOne_test':
+            self.taggerOne_test_metadata = _metadata
 
     def set_optimizers_and_schedulers(self):
         args = self.args
@@ -260,6 +268,10 @@ class Trainer(ABC):
         pass
 
     @abstractmethod
+    def create_taggerOne_test_dataloader(self):
+        pass
+
+    @abstractmethod
     def train(self):
         pass
     
@@ -307,6 +319,12 @@ class XDocClusterLinkingTrainer(Trainer):
          self.test_mention_dataset,
          self.test_mention_entity_dataset) = data
 
+    def create_taggerOne_test_dataloader(self):
+        data = self.eval_data(split='taggerOne_test')
+        (self.taggerOne_test_cluster2mentions,
+         self.taggerOne_test_mention_dataset,
+         self.taggerOne_test_mention_entity_dataset) = data
+
     def _xdoc_train_collate_fn(self, batch):
         # get all of the cluster ids
         cluster_ids = flatten([[x['cluster_id']]
@@ -353,7 +371,7 @@ class XDocClusterLinkingTrainer(Trainer):
                           shuffle=False)
 
     def eval_data(self, split=None):
-        assert split == 'train' or split == 'val' or split =='test'
+        assert split == 'train' or split == 'val' or split =='test' or split =='taggerOne_test'
         args = self.args
         return self.load_and_cache_examples(split=split, evaluate=True)
 
@@ -1394,7 +1412,7 @@ class XDocClusterLinkingTrainer(Trainer):
         return hits / len(mentions)
 
     def evaluate(self, split='', threshold=None):
-        assert split == 'train' or split == 'val' or split == 'test'
+        assert split == 'train' or split == 'val' or split == 'test' or split
 
         args = self.args
 
@@ -1408,7 +1426,12 @@ class XDocClusterLinkingTrainer(Trainer):
             mention_dataset = self.val_mention_dataset
             mention_entity_dataset = self.val_mention_entity_dataset
             domains = args.val_domains
-        else:
+        elif split == 'test':
+            cluster2mentions = self.test_cluster2mentions
+            mention_dataset = self.test_mention_dataset
+            mention_entity_dataset = self.test_mention_entity_dataset
+            domains = args.test_domains
+        elif split == 'taggerOne_test':
             cluster2mentions = self.test_cluster2mentions
             mention_dataset = self.test_mention_dataset
             mention_entity_dataset = self.test_mention_entity_dataset

@@ -14,7 +14,7 @@ python -m torch.distributed.launch \
         --task_name 'cluster_linking' \
         --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_2/checkpoint-796/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
-        --do_test \
+        --do_taggerOne_test \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --embed_pooling_strategy 'pool_highlighted_outputs' \
@@ -26,4 +26,5 @@ python -m torch.distributed.launch \
         --logging_steps 25 \
         --train_domains 'train' 'entity_documents' \
         --val_domains 'val' 'entity_documents' \
-        --test_domains 'test' 'entity_documents'
+        --test_domains 'test' 'entity_documents' \
+        --taggerOne_test_domains 'taggerOne_test' 'entity_documents'
