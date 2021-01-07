@@ -13,11 +13,11 @@ from IPython import embed
 
 DATASET = 'BC5CDR'
 REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
-PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
 #PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_sample_PMIDs.txt'
-#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
-PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
-#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
+PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
+#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
 MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
 ENTITY_FILES = [
     ('Chemical', REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv'),
@@ -84,13 +84,6 @@ if __name__ == '__main__':
                     _text_to_add += line_split[2].strip()
                     raw_docs[line_split[0]] += _text_to_add
 
-    # tokenize all of the documents
-    tokenized_docs = {}
-    for pmid, raw_text in raw_docs.items():
-        wp_tokens = tokenizer.tokenize(raw_text)
-        tokenized_text = ' '.join(wp_tokens).replace(' ##', '')
-        tokenized_docs[pmid] = tokenized_text
-
     # get all of the mentions and their tfidf candidates in raw form
     print('Reading mentions, tfidf candidates, and building entity set...')
     mention_cands = defaultdict(list)
@@ -137,6 +130,25 @@ if __name__ == '__main__':
     mentions = defaultdict(list)
     for key, value in mention_cands.items():
         mentions[key[0]].append(value[0])
+
+    # tokenize all of the documents
+    tokenized_docs = {}
+    for pmid, raw_text in raw_docs.items():
+        # insert spaces to handle mention boundary edge case
+        spaces_added = 0
+        for m in mentions[pmid]:
+            char_before_start = int(m['char_start']) + spaces_added - 1
+            if char_before_start > 0 and raw_text[char_before_start] != ' ':
+                raw_text = raw_text[:char_before_start+1] + ' ' + raw_text[char_before_start+1:]
+                spaces_added += 1
+            char_after_end = int(m['char_end']) + spaces_added # this is correct even though it doesn't look right
+            if char_after_end > 0 and raw_text[char_after_end] != ' ':
+                raw_text = raw_text[:char_after_end] + ' ' + raw_text[char_after_end:]
+                spaces_added += 1
+
+        wp_tokens = tokenizer.tokenize(raw_text)
+        tokenized_text = ' '.join(wp_tokens).replace(' ##', '')
+        tokenized_docs[pmid] = tokenized_text
     
     # sort the mentions in each doc
     for key in list(mentions.keys()):
@@ -154,6 +166,10 @@ if __name__ == '__main__':
             )
             if not condition:
                 _mentions.append(m)
+            else:
+                print('\n\nInside FAILED Condition\n\n')
+                embed()
+                exit()
         mentions[key] = _mentions
 
     # do a token match and get the start offset
@@ -188,8 +204,16 @@ if __name__ == '__main__':
             start_index = get_offset(
                 tokenized_doc, tokenized_mention, start_offset
             )
-            if start_index == -1: # somehow the mention was not found, ignore
-                continue
+
+            #if start_index > int(m['char_start']):
+            #    print('\nsomething definitely went wrong?\n')
+            #    embed()
+            #    exit()
+
+            if start_index == -1: # somehow the mention was not found, FAIL
+                print('\nFAILED get_offset()\n')
+                embed()
+                exit()
             tokenized_doc = tokenized_doc[:start_index] \
                             + tokenized_mention_exp \
                             + tokenized_doc[start_index+len(tokenized_mention):] 
