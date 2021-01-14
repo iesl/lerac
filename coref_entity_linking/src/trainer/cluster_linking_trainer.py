@@ -28,8 +28,6 @@ from utils.comm import (all_gather,
 from utils.knn_index import WithinDocNNIndex, CrossDocNNIndex
 from utils.misc import flatten, unique, dict_merge_with
 
-if get_rank() == 0:
-    import wandb
 
 from IPython import embed
 
@@ -556,8 +554,6 @@ class ClusterLinkingTrainer(Trainer):
                                 str(stat_value/args.logging_steps),
                                 str(global_step)
                         )
-                        if get_rank() == 0:
-                            wandb.log({stat_name : stat_value/args.logging_steps}, step=global_step)
                     logger.info('Using {} edges for training'.format(args.training_edges_considered))
                     log_return_dicts = []
 
@@ -582,15 +578,11 @@ class ClusterLinkingTrainer(Trainer):
                             split='train',
                             suffix='checkpoint-{}'.format(global_step)
                     )
-                    if get_rank() == 0:
-                        wandb.log(train_eval_metrics, step=global_step)
                 if args.do_val:
                     val_metrics = self.evaluate(
                             split='val',
                             suffix='checkpoint-{}'.format(global_step)
                     )
-                    if get_rank() == 0:
-                        wandb.log(val_metrics, step=global_step)
 
         logger.info('Training complete')
         #if get_rank() == 0:
