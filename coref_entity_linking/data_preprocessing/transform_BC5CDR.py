@@ -13,18 +13,20 @@ from IPython import embed
 
 DATASET = 'BC5CDR'
 REPO_ROOT = '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/'
-PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
+#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_traindev_PMIDs.txt'
 #PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/BC5CDR_sample_PMIDs.txt'
-#PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
-PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
-#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
+PMIDS_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.pmids.txt'
+#PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CDR.2.PubTator'
+PUBTATOR_FILE = REPO_ROOT + 'data/raw_BC5CDR/BC5CDR_TEST/CDR_TestSet.PubTator.joint.txt'
 MATCHES_FILE = REPO_ROOT + 'data/raw_BC5CDR/mention_matches_bc5cdr.txt'
+
 ENTITY_FILES = [
     ('Chemical', REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_chemicals-2015-07-22.tsv'),
     ('Disease', REPO_ROOT + 'data/raw_BC5CDR/BC5CDR/CTD_diseases-2015-06-04.tsv')
 ]
+CONCEPT_DICT_FILE = REPO_ROOT + 'data/raw_BC5CDR/biosyn_bc5cdr_dictionary.txt'
 
-OUTPUT_DIR = '/mnt/nfs/scratch1/rangell/lerac/data/{}'.format(DATASET)
+TOPK = 64
 
 
 if __name__ == '__main__':
@@ -36,8 +38,9 @@ if __name__ == '__main__':
         do_lower_case=False
     )
 
-    # process entity files, producing building entity dict
     entity_dict = {}
+    ## TODO: Replace this next block
+    # PROCESS ENTITY FILES, Producing building entity dict
     for entity_type, raw_entity_file in ENTITY_FILES:
         with open(raw_entity_file, 'r') as f:
             for line in f:
@@ -56,6 +59,26 @@ if __name__ == '__main__':
                     'type': entity_type
                 }
                 entity_dict[cuid] = entity_obj
+
+    ## NOTE: SKIP THIS FOR NOW TOO
+    #cuid2type = {}
+    #cuid2syn = defaultdict(list)
+    #with open(CONCEPT_DICT_FILE, 'r') as f:
+    #    for line in f:
+    #        cuids, sty, name = line.strip().split('||')
+    #        for cuid in cuids.split('|'):
+    #            cuid2type[cuid] = sty
+    #            cuid2syn[cuid].append(name)
+    #for cuid, sty in cuid2type.items():
+    #    entity_obj = {
+    #        'document_id': cuid,
+    #        'title': name,
+    #        'text': '[ {} ] ( {} )'.format(
+    #                sty, ' ; '.join(cuid2syn[cuid])
+    #            ),
+    #        'type': sty
+    #    }
+    #    entity_dict[cuid] = entity_obj
 
     # get all pmids
     with open(PMIDS_FILE, 'r') as f:
@@ -84,12 +107,13 @@ if __name__ == '__main__':
                     _text_to_add += line_split[2].strip()
                     raw_docs[line_split[0]] += _text_to_add
 
-    # tokenize all of the documents
-    tokenized_docs = {}
-    for pmid, raw_text in raw_docs.items():
-        wp_tokens = tokenizer.tokenize(raw_text)
-        tokenized_text = ' '.join(wp_tokens).replace(' ##', '')
-        tokenized_docs[pmid] = tokenized_text
+    # NOTE: this gets done later now with special spaces added
+    ## tokenize all of the documents
+    #tokenized_docs = {}
+    #for pmid, raw_text in raw_docs.items():
+    #    wp_tokens = tokenizer.tokenize(raw_text)
+    #    tokenized_text = ' '.join(wp_tokens).replace(' ##', '')
+    #    tokenized_docs[pmid] = tokenized_text
 
     # get all of the mentions and their tfidf candidates in raw form
     print('Reading mentions, tfidf candidates, and building entity set...')
@@ -109,34 +133,63 @@ if __name__ == '__main__':
             mention_cands[mention_key].append(mention_cand_val)
     print('Done.')
 
-    # extend entity dict
-    for cuid, names in cuid2names.items():
-        if cuid in entity_dict.keys():
-            continue
-        name_counts = defaultdict(int)
-        for name in names:
-            name_counts[name] += 1
-        names_w_counts = sorted(
-            name_counts.items(), reverse=True, key=lambda x: x[1]
-        )
-        uniq_names, _ = zip(*names_w_counts)
-        
-        entity_obj = {
-            'document_id': cuid,
-            'title': uniq_names[0],
-            'text': '{} [ {} ] ( {} )'.format(
-                    uniq_names[0],
-                    cuid2type[cuid],
-                    ' ; '.join(uniq_names)
-                ),
-            'type': cuid2type[cuid]
-        }
-        entity_dict[cuid] = entity_obj
+    ## NOTE: Shouldn't need this
+    ### TODO: check this next block (do we need it? is it ok?)
+    ## extend entity dict
+    #missed = 0
+    #for cuid, names in cuid2names.items():
+    #    if cuid in entity_dict.keys():
+    #        continue
+    #    else:
+    #        missed += 1
+    #        continue
+    #        embed()
+    #        exit()
+    #        assert False
+    #    name_counts = defaultdict(int)
+    #    for name in names:
+    #        name_counts[name] += 1
+    #    names_w_counts = sorted(
+    #        name_counts.items(), reverse=True, key=lambda x: x[1]
+    #    )
+    #    uniq_names, _ = zip(*names_w_counts)
+    #    
+    #    entity_obj = {
+    #        'document_id': cuid,
+    #        'title': uniq_names[0],
+    #        'text': '{} [ {} ] ( {} )'.format(
+    #                uniq_names[0],
+    #                cuid2type[cuid],
+    #                ' ; '.join(uniq_names)
+    #            ),
+    #        'type': cuid2type[cuid]
+    #    }
+    #    entity_dict[cuid] = entity_obj
+    assert all([cuid in entity_dict.keys() for cuid in cuid2names.keys()])
 
     # organize mentions by pmid
     mentions = defaultdict(list)
     for key, value in mention_cands.items():
         mentions[key[0]].append(value[0])
+
+    # tokenize all of the documents
+    tokenized_docs = {}
+    for pmid, raw_text in raw_docs.items():
+        # insert spaces to handle mention boundary edge case
+        spaces_added = 0
+        for m in mentions[pmid]:
+            char_before_start = int(m['char_start']) + spaces_added - 1
+            if char_before_start > 0 and raw_text[char_before_start] != ' ':
+                raw_text = raw_text[:char_before_start+1] + ' ' + raw_text[char_before_start+1:]
+                spaces_added += 1
+            char_after_end = int(m['char_end']) + spaces_added # this is correct even though it doesn't look right
+            if char_after_end > 0 and raw_text[char_after_end] != ' ':
+                raw_text = raw_text[:char_after_end] + ' ' + raw_text[char_after_end:]
+                spaces_added += 1
+
+        wp_tokens = tokenizer.tokenize(raw_text)
+        tokenized_text = ' '.join(wp_tokens).replace(' ##', '')
+        tokenized_docs[pmid] = tokenized_text
     
     # sort the mentions in each doc
     for key in list(mentions.keys()):
@@ -188,8 +241,8 @@ if __name__ == '__main__':
             start_index = get_offset(
                 tokenized_doc, tokenized_mention, start_offset
             )
-            if start_index == -1: # somehow the mention was not found, ignore
-                continue
+            if start_index == -1: # somehow the mention was not found, FAIL
+                assert False
             tokenized_doc = tokenized_doc[:start_index] \
                             + tokenized_mention_exp \
                             + tokenized_doc[start_index+len(tokenized_mention):] 
@@ -217,7 +270,7 @@ if __name__ == '__main__':
 
             # get candidates
             tfidf_cand_cuids = []
-            for cand in mention_cands[(pmid, start_char, end_char)]:
+            for cand in mention_cands[(pmid, start_char, end_char)][:TOPK]:
                 tfidf_cand_cuids.append(cand['match_cuid'])
 
             # create tfidf candidates object and add to list

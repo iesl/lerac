@@ -10,11 +10,11 @@ python -m torch.distributed.launch \
     src/main.py \
         --data_dir '/local/coref_entity_linking/data/BC5CDR/' \
         --model_type 'bert' \
-        --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_2/checkpoint-796/' \
+        --trained_model_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_5/checkpoint-1592/' \
         --task_name 'cluster_linking' \
-        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_2/checkpoint-796/' \
+        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_5/checkpoint-1592/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
-        --do_taggerOne_test \
+        --do_val \
         --max_seq_length 128 \
         --seq_embed_dim 128 \
         --embed_pooling_strategy 'pool_highlighted_outputs' \

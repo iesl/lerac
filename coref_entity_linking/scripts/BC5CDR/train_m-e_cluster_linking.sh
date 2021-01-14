@@ -17,7 +17,7 @@ python -m torch.distributed.launch \
         --model_type 'bert' \
         --model_name_or_path 'models/biobert_v1.1_pubmed/' \
         --task_name 'cluster_linking' \
-        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_3_m-e/' \
+        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/BC5CDR/cluster_linking/exp_5_m-e/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_train \
         --max_seq_length '128' \
@@ -39,7 +39,7 @@ python -m torch.distributed.launch \
         --num_clusters_per_macro_batch '16' \
         --per_gpu_train_batch_size '16' \
         --per_gpu_infer_batch_size '256' \
-        --num_train_epochs '1' \
+        --num_train_epochs '6' \
         --logging_steps '25' \
         --knn_refresh_steps '-1' \
         --train_domains 'train' 'entity_documents' \
