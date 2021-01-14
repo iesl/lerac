@@ -17,7 +17,7 @@ python -m torch.distributed.launch \
         --model_type 'bert' \
         --model_name_or_path 'models/biobert_v1.1_pubmed/' \
         --task_name 'cluster_linking' \
-        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_final_m-m/' \
+        --output_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/experiments/mm_st21pv_long_entities/cluster_linking/exp_0_m-m/' \
         --log_dir '/mnt/nfs/scratch1/rangell/lerac/coref_entity_linking/logs/' \
         --do_train \
         --max_seq_length '128' \
@@ -39,7 +39,7 @@ python -m torch.distributed.launch \
         --num_clusters_per_macro_batch '16' \
         --per_gpu_train_batch_size '16' \
         --per_gpu_infer_batch_size '256' \
-        --num_train_epochs '3' \
+        --num_train_epochs '6' \
         --logging_steps '25' \
         --knn_refresh_steps '-1' \
         --train_domains 'train' 'T005' 'T007' 'T017' 'T022' 'T031' 'T033' 'T037' 'T038' 'T058' 'T062' 'T074' 'T082' 'T091' 'T092' 'T097' 'T098' 'T103' 'T168' 'T170' 'T201' 'T204' \
